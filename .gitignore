@@ -1,0 +1,40 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.vs/
+.vscode/
+
+# Local assistant/tooling
+.claude/settings.local.json
+
+# Local docs / data dumps
+DocSF/
+
+# Logs
+*.log
+*.out
+*.err
+
+# .NET
+bin/
+obj/
+.idea/
+
+# Node / frontend
+node_modules/
+dist/
+.vite/
+
+# App settings with local secrets
+src/EWS.API/appsettings.json
+src/EWS.API/appsettings.Development.json
+EWS_Local.postman_environment.json
+
+# Local env files
+.env
+.env.*
+!.env.example
+
+# Temporary files
+*.tmp
+*.temp

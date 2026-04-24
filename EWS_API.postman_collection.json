@@ -1,0 +1,857 @@
+{
+  "info": {
+    "name": "EWS — Enterprise Workflow System",
+    "description": "API Collection สำหรับทดสอบระบบ Approval Workflow แบบ Position-Based\n\n**Base URL**: http://localhost:5062\n\n**วิธีใช้:**\n1. Import collection นี้เข้า Postman\n2. Import Environment `EWS_Local.postman_environment.json`\n3. เลือก Environment เป็น `EWS Local`\n4. เริ่มจาก `Organization` → ดู hierarchy ก่อน\n5. จากนั้น `Workflows/Submit` แล้วตาม approve ทีละ step\n\n**Variable ที่ auto-save:**\n- `instanceId` — save อัตโนมัติหลัง Submit\n- `infoRequestId` — save อัตโนมัติหลัง Request Info",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl",                "value": "http://localhost:5062",  "type": "string" },
+    { "key": "instanceId",             "value": "",  "type": "string", "description": "Auto-saved after Submit" },
+    { "key": "infoRequestId",          "value": "",  "type": "string", "description": "Auto-saved after Request Info" },
+    { "key": "positionCode",           "value": "HOSTAFF01", "type": "string" },
+    { "key": "employeeId",             "value": "", "type": "string" },
+    { "key": "docCode",                "value": "101", "type": "string" },
+    { "key": "amount",                 "value": "45000", "type": "string" },
+    { "key": "approverPositionCode",   "value": "", "type": "string" },
+    { "key": "approverEmployeeId",     "value": "", "type": "string" },
+    { "key": "approverPositionCode2",  "value": "", "type": "string" },
+    { "key": "approverEmployeeId2",    "value": "", "type": "string" },
+    { "key": "chiefPositionCode",      "value": "", "type": "string" },
+    { "key": "chiefEmployeeId",        "value": "", "type": "string" },
+    { "key": "employeeCode",           "value": "", "type": "string" },
+    { "key": "fromStepOrder",          "value": "2", "type": "string" },
+    { "key": "toStepOrder",            "value": "1", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Organization",
+      "description": "ตรวจสอบโครงสร้างองค์กร, Hierarchy, และ Approval Chain",
+      "item": [
+        {
+          "name": "Get Position Hierarchy",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/organization/positions/{{positionCode}}/hierarchy",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "organization", "positions", "{{positionCode}}", "hierarchy"]
+            },
+            "description": "ดู Hierarchy ของตำแหน่ง ตั้งแต่ตำแหน่งนั้นขึ้นไปถึง CEO\nใช้ตรวจสอบสายบังคับบัญชา และ Auto-Escalation Path\n\nLevel 0 = ตำแหน่งที่ query, Level 1 = parent, ...\nisVacant: true = จะถูกข้ามเมื่อ Auto-Escalate"
+          },
+          "response": []
+        },
+        {
+          "name": "Simulate Approval Chain",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/organization/positions/{{positionCode}}/approval-chain?docCode={{docCode}}&amount={{amount}}&isSpecialItem=false&isUrgent=false",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "organization", "positions", "{{positionCode}}", "approval-chain"],
+              "query": [
+                { "key": "docCode",       "value": "{{docCode}}",   "description": "รหัสประเภทเอกสาร" },
+                { "key": "amount",        "value": "{{amount}}",    "description": "มูลค่าเอกสาร" },
+                { "key": "isSpecialItem", "value": "false" },
+                { "key": "isUrgent",      "value": "false" }
+              ]
+            },
+            "description": "Simulate Approval Chain — ดูว่าถ้า Position นี้ Submit เอกสาร DocCode นี้ จะต้องผ่านใครบ้าง\nไม่สร้าง Record จริง — ใช้ตรวจสอบ Workflow Configuration ก่อน Submit"
+          },
+          "response": []
+        },
+        {
+          "name": "Simulate Approval Chain (Urgent)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/organization/positions/{{positionCode}}/approval-chain?docCode={{docCode}}&amount={{amount}}&isSpecialItem=false&isUrgent=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "organization", "positions", "{{positionCode}}", "approval-chain"],
+              "query": [
+                { "key": "docCode", "value": "{{docCode}}" },
+                { "key": "amount", "value": "{{amount}}" },
+                { "key": "isSpecialItem", "value": "false" },
+                { "key": "isUrgent", "value": "true" }
+              ]
+            },
+            "description": "ทดสอบ Urgent Flow — ดูว่า Step เปลี่ยนไปอย่างไร"
+          },
+          "response": []
+        },
+        {
+          "name": "Simulate Approval Chain (Special Item)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/organization/positions/{{positionCode}}/approval-chain?docCode={{docCode}}&amount={{amount}}&isSpecialItem=true&isUrgent=false",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "organization", "positions", "{{positionCode}}", "approval-chain"],
+              "query": [
+                { "key": "docCode", "value": "{{docCode}}" },
+                { "key": "amount", "value": "{{amount}}" },
+                { "key": "isSpecialItem", "value": "true" },
+                { "key": "isUrgent", "value": "false" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Employee Current Position",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/organization/employees/{{employeeCode}}/current-position",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "organization", "employees", "{{employeeCode}}", "current-position"]
+            },
+            "description": "ดูตำแหน่งปัจจุบันของพนักงาน (Active Assignment)\nใช้หา positionCode + employeeId ก่อน Submit"
+          },
+          "response": []
+        },
+        {
+          "name": "Bulk Re-Escalate (พนักงานลาออก)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"requestedByPositionCode\": \"HOADMIN01\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/organization/employees/{{employeeCode}}/re-escalate-pending",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "organization", "employees", "{{employeeCode}}", "re-escalate-pending"]
+            },
+            "description": "Re-route เอกสาร Pending ทั้งหมดของพนักงานที่ลาออก\n\n**ลำดับการทำ Off-boarding:**\n1. HR deactivate PositionAssignment ใน HR System\n2. เรียก API นี้\n3. ตรวจสอบ totalStepsStuck — ถ้า > 0 ต้อง Manual Reassign\n\n**Response fields:**\n- affectedInstances: จำนวน Instance ที่กระทบ\n- totalStepsReEscalated: Steps ที่ re-route สำเร็จ\n- totalStepsStuck: Steps ที่ hierarchy หมด (ต้อง Admin Reassign)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Workflows",
+      "description": "Submit, Approve, Reject เอกสาร และตรวจสอบสถานะ",
+      "item": [
+        {
+          "name": "List Workflow Instances",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/workflows?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workflows"],
+              "query": [
+                { "key": "status",       "value": "",  "description": "Pending | Approved | Rejected | Draft | Blocked", "disabled": true },
+                { "key": "positionCode", "value": "",  "description": "กรองตาม Position ที่ต้องอนุมัติ", "disabled": true },
+                { "key": "docCode",      "value": "",  "description": "กรองตามประเภทเอกสาร", "disabled": true },
+                { "key": "page",         "value": "1" },
+                { "key": "pageSize",     "value": "20" }
+              ]
+            },
+            "description": "รายการ Workflow Instances ทั้งหมด\nสามารถกรองตาม status, positionCode, docCode\n\n**Inbox ของผู้อนุมัติ**: เพิ่ม ?status=Pending&positionCode={code}"
+          },
+          "response": []
+        },
+        {
+          "name": "List — Inbox ผู้อนุมัติ (Pending)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/workflows?status=Pending&positionCode={{approverPositionCode}}&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workflows"],
+              "query": [
+                { "key": "status",       "value": "Pending" },
+                { "key": "positionCode", "value": "{{approverPositionCode}}" },
+                { "key": "page",         "value": "1" },
+                { "key": "pageSize",     "value": "20" }
+              ]
+            },
+            "description": "Inbox เอกสารรออนุมัติสำหรับตำแหน่งที่กำหนด"
+          },
+          "response": []
+        },
+        {
+          "name": "List — Blocked (รอ Admin Reassign)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/workflows?status=Blocked&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workflows"],
+              "query": [
+                { "key": "status",   "value": "Blocked" },
+                { "key": "page",     "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            },
+            "description": "เอกสารที่ Stuck — hierarchy หมด รอ Admin reassign"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Workflow Instance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/workflows/{{instanceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workflows", "{{instanceId}}"]
+            },
+            "description": "ดูรายละเอียด Workflow Instance พร้อม Approval Steps ทั้งหมด\n\nดู currentStepOrder และ steps[].status เพื่อรู้ว่า Step ไหน Active อยู่"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Workflow Audit Trail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/workflows/{{instanceId}}/audit",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workflows", "{{instanceId}}", "audit"]
+            },
+            "description": "Audit Trail — ประวัติทุก Event (Immutable, Insert-Only)\n\nEventType ที่จะเห็น:\nSubmit, Approve, Complete, Reject,\nPreApprove:Confirmed, PreApprove:Rejected,\nInfoRequest, InfoRequest:Forward, InfoRequest:Answered, InfoRequest:ChainResume,\nReEscalate, ReEscalate:Blocked, ReEscalate:Stuck,\nReassign"
+          },
+          "response": []
+        },
+        {
+          "name": "Submit Workflow",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.data && body.data.instanceId) {",
+                  "        pm.collectionVariables.set('instanceId', body.data.instanceId);",
+                  "        console.log('instanceId saved:', body.data.instanceId);",
+                  "        console.log('Flow:', body.data.flowDesc);",
+                  "        console.log('Steps:', body.data.approvalChain.length);",
+                  "        console.log('RequiresPreApproval:', body.data.requiresPreApproval);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"docCode\": {{docCode}},\n  \"submitterPositionCode\": \"{{positionCode}}\",\n  \"submitterEmployeeId\": \"{{employeeId}}\",\n  \"actingAsPositionCode\": null,\n  \"totalAmount\": {{amount}},\n  \"isSpecialItem\": false,\n  \"isUrgent\": false,\n  \"subject\": \"ทดสอบ Submit เอกสาร\",\n  \"remark\": \"ทดสอบผ่าน Postman\",\n  \"isCreatedBySecretary\": false\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/workflows/submit",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workflows", "submit"]
+            },
+            "description": "Submit เอกสารเข้า Workflow\nระบบจะเลือก Flow Template อัตโนมัติจาก DocCode + Amount + Scope\nResponse แสดง approvalChain ทั้งหมดทันที\n\nScript จะ auto-save instanceId ลง Collection Variable"
+          },
+          "response": []
+        },
+        {
+          "name": "Submit — By Secretary (รอ Chief PreApprove)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.data && body.data.instanceId) {",
+                  "        pm.collectionVariables.set('instanceId', body.data.instanceId);",
+                  "        console.log('instanceId saved:', body.data.instanceId);",
+                  "        console.log('Status (should be Draft):', body.data.status);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"docCode\": {{docCode}},\n  \"submitterPositionCode\": \"{{positionCode}}\",\n  \"submitterEmployeeId\": \"{{employeeId}}\",\n  \"actingAsPositionCode\": null,\n  \"totalAmount\": {{amount}},\n  \"isSpecialItem\": false,\n  \"isUrgent\": false,\n  \"subject\": \"เอกสารที่เลขาทำแทน Chief\",\n  \"remark\": \"เลขาสร้างแทน — ต้องรอ Chief PreApprove ก่อน Flow จริงเริ่ม\",\n  \"isCreatedBySecretary\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/workflows/submit",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workflows", "submit"]
+            },
+            "description": "Submit โดยเลขา — Status จะเป็น Draft, RequiresPreApproval=true\nต้องใช้ Pre-Approve ก่อน Flow จริงจึงจะเริ่ม"
+          },
+          "response": []
+        },
+        {
+          "name": "Submit — With Delegation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.data && body.data.instanceId) {",
+                  "        pm.collectionVariables.set('instanceId', body.data.instanceId);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"docCode\": {{docCode}},\n  \"submitterPositionCode\": \"{{positionCode}}\",\n  \"submitterEmployeeId\": \"{{employeeId}}\",\n  \"actingAsPositionCode\": \"{{chiefPositionCode}}\",\n  \"totalAmount\": {{amount}},\n  \"isSpecialItem\": false,\n  \"isUrgent\": false,\n  \"subject\": \"เอกสาร Submit ในฐานะรักษาการแทน\",\n  \"remark\": \"Delegation Test\",\n  \"isCreatedBySecretary\": false\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/workflows/submit",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workflows", "submit"]
+            },
+            "description": "Submit ในฐานะรักษาการแทน (Delegation)\nactingAsPositionCode = ตำแหน่งที่ตัวเองรักษาการแทนอยู่"
+          },
+          "response": []
+        },
+        {
+          "name": "Approve Workflow",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"actorPositionCode\": \"{{approverPositionCode}}\",\n  \"actorEmployeeId\": \"{{approverEmployeeId}}\",\n  \"comment\": \"อนุมัติ\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/workflows/{{instanceId}}/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workflows", "{{instanceId}}", "approve"]
+            },
+            "description": "อนุมัติ Step ปัจจุบัน\nตรวจสอบสิทธิ์ผ่าน AssignedPosition หรือ Active Delegation\n\n**หมายเหตุ**: Info Requests ที่ค้างอยู่ทั้งหมดของ Step นี้จะถูก auto-cancel\n\nResponse: isCompleted=true + status=Approved = ครบทุก Step แล้ว"
+          },
+          "response": []
+        },
+        {
+          "name": "Reject Workflow",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"actorPositionCode\": \"{{approverPositionCode}}\",\n  \"actorEmployeeId\": \"{{approverEmployeeId}}\",\n  \"comment\": \"ไม่อนุมัติ เนื่องจากเอกสารไม่ครบถ้วน\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/workflows/{{instanceId}}/reject",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workflows", "{{instanceId}}", "reject"]
+            },
+            "description": "ปฏิเสธเอกสาร — ต้องระบุ comment (เหตุผล)\nInstance เปลี่ยนเป็น Rejected ทันที + Info Requests ค้างถูก auto-cancel"
+          },
+          "response": []
+        },
+        {
+          "name": "Pre-Approve (Chief ยืนยัน)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"chiefPositionCode\": \"{{chiefPositionCode}}\",\n  \"chiefEmployeeId\": \"{{chiefEmployeeId}}\",\n  \"isConfirmed\": true,\n  \"comment\": \"Chief ยืนยันเอกสารที่เลขาสร้างให้\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/workflows/{{instanceId}}/pre-approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workflows", "{{instanceId}}", "pre-approve"]
+            },
+            "description": "Chief ยืนยันเอกสารที่เลขาสร้าง → isConfirmed: true\nFlow เริ่มเดิน Instance เปลี่ยนจาก Draft → Pending"
+          },
+          "response": []
+        },
+        {
+          "name": "Pre-Reject (Chief ปฏิเสธ)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"chiefPositionCode\": \"{{chiefPositionCode}}\",\n  \"chiefEmployeeId\": \"{{chiefEmployeeId}}\",\n  \"isConfirmed\": false,\n  \"comment\": \"Chief ไม่ยืนยัน เอกสารไม่ถูกต้อง\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/workflows/{{instanceId}}/pre-approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workflows", "{{instanceId}}", "pre-approve"]
+            },
+            "description": "Chief ปฏิเสธเอกสารของเลขา → isConfirmed: false\nInstance เปลี่ยนจาก Draft → Rejected"
+          },
+          "response": []
+        },
+        {
+          "name": "Re-Escalate (ผู้อนุมัติว่างหลัง Submit)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"requestedByPositionCode\": \"HOADMIN01\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/workflows/{{instanceId}}/re-escalate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workflows", "{{instanceId}}", "re-escalate"]
+            },
+            "description": "Re-route เอกสารนี้ เมื่อผู้อนุมัติลาออก/โอนย้ายหลัง Submit\nระบบจะ walk up hierarchy หาผู้อนุมัติใหม่\n\nstepsStuck > 0 = hierarchy หมด ต้องใช้ Reassign Step"
+          },
+          "response": []
+        },
+        {
+          "name": "Reassign Step (Admin — Hierarchy หมด)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetPositionCode\": \"HODIRECTOR01\",\n  \"requestedByPositionCode\": \"HOADMIN01\",\n  \"reason\": \"CFO ว่าง — CEO มอบหมายให้ Director Finance ทำแทนชั่วคราว\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/workflows/{{instanceId}}/steps/2/reassign",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workflows", "{{instanceId}}", "steps", "2", "reassign"]
+            },
+            "description": "Admin กำหนดผู้อนุมัติใหม่โดยตรง เมื่อ Step ติด Stuck\nใช้เมื่อ Re-Escalate แล้วไม่พบผู้อนุมัติในสาย hierarchy\n\nเปลี่ยน path parameter '2' เป็น stepOrder ที่ต้องการ reassign"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Info Requests",
+      "description": "การขอข้อมูลระหว่าง Step ระหว่างรออนุมัติ\n\nกฎ:\n- ขอย้อนหลังเท่านั้น (toStepOrder < fromStepOrder)\n- ถามหลาย Step พร้อมกันได้\n- ห้ามถาม Step เดิมซ้ำขณะที่ยังมี Open request\n- ถามใหม่ได้หลัง request ปิดแล้ว\n- Approve/Reject แล้ว = auto-cancel requests ที่ค้างทั้งหมด",
+      "item": [
+        {
+          "name": "Request Info (Step N ถาม Step M)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.data && body.data.infoRequestId) {",
+                  "        pm.collectionVariables.set('infoRequestId', body.data.infoRequestId);",
+                  "        console.log('infoRequestId saved:', body.data.infoRequestId);",
+                  "        console.log('To:', body.data.toPositionName, '(' + body.data.toOccupantName + ')');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"toStepOrder\": {{toStepOrder}},\n  \"actorPositionCode\": \"{{approverPositionCode}}\",\n  \"actorEmployeeId\": \"{{approverEmployeeId}}\",\n  \"question\": \"ขอให้ยืนยันข้อมูลเพิ่มเติม...\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/workflows/{{instanceId}}/steps/{{fromStepOrder}}/request-info",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workflows", "{{instanceId}}", "steps", "{{fromStepOrder}}", "request-info"]
+            },
+            "description": "Step ปัจจุบัน (fromStepOrder) ขอข้อมูลจาก Step ก่อนหน้า (toStepOrder)\n\nกฎ: toStepOrder ต้องน้อยกว่า fromStepOrder\n\nStep ยังคง Pending อยู่ตลอด — ไม่ block การ Approve\nScript จะ auto-save infoRequestId"
+          },
+          "response": []
+        },
+        {
+          "name": "Request Info (ถามอีก Step พร้อมกัน)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.data && body.data.infoRequestId) {",
+                  "        console.log('Second infoRequestId:', body.data.infoRequestId);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"toStepOrder\": 1,\n  \"actorPositionCode\": \"{{approverPositionCode}}\",\n  \"actorEmployeeId\": \"{{approverEmployeeId}}\",\n  \"question\": \"ขอให้ตรวจสอบข้อมูลอีก Step...\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/workflows/{{instanceId}}/steps/{{fromStepOrder}}/request-info",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workflows", "{{instanceId}}", "steps", "{{fromStepOrder}}", "request-info"]
+            },
+            "description": "ทดสอบถาม 2 Step พร้อมกัน — ถามคนละ toStepOrder ได้\nเปลี่ยน toStepOrder ใน body เป็น Step อื่นที่ต้องการ"
+          },
+          "response": []
+        },
+        {
+          "name": "Inbox — Info Requests ที่ต้องตอบ",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/workflows/info-requests/pending?positionCode={{approverPositionCode}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workflows", "info-requests", "pending"],
+              "query": [
+                { "key": "positionCode", "value": "{{approverPositionCode}}", "description": "ตำแหน่งที่ต้องการดู inbox" },
+                { "key": "instanceId",   "value": "{{instanceId}}", "description": "กรองเฉพาะ instance นี้ (optional)", "disabled": true }
+              ]
+            },
+            "description": "ดู Info Requests ที่ตำแหน่งนี้ต้องตอบ (Inbox)\n\nStatus ที่จะเห็น:\n- Open: รอตอบ\n- Forwarded: ส่งต่อไป Step ก่อนหน้าแล้ว รอ child ตอบก่อน\n  (ดู childAnswer ว่า child ตอบอะไรมา)"
+          },
+          "response": []
+        },
+        {
+          "name": "Respond — ตอบตรง",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"actorPositionCode\": \"{{approverPositionCode}}\",\n  \"actorEmployeeId\": \"{{approverEmployeeId}}\",\n  \"answer\": \"คำตอบ: ยืนยันข้อมูลแล้ว ...\",\n  \"forwardToStepOrder\": null,\n  \"forwardQuestion\": null\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/workflows/info-requests/{{infoRequestId}}/respond",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workflows", "info-requests", "{{infoRequestId}}", "respond"]
+            },
+            "description": "ตอบ Info Request โดยตรง\n\nเมื่อตอบแล้ว:\n- Request: Closed\n- ถ้าเป็น root request → Step ที่ถามยังคง Pending (ไม่เปลี่ยน)\n- ถ้าเป็น child → parent กลับมา Open รอ parent ตอบ"
+          },
+          "response": []
+        },
+        {
+          "name": "Respond — Forward ต่อไป Step ก่อนหน้า",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.data && body.data.childInfoRequestId) {",
+                  "        pm.collectionVariables.set('infoRequestId', body.data.childInfoRequestId);",
+                  "        console.log('Child infoRequestId saved:', body.data.childInfoRequestId);",
+                  "        console.log('Forwarded to:', body.data.forwardedToPositionCode);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"actorPositionCode\": \"{{approverPositionCode}}\",\n  \"actorEmployeeId\": \"{{approverEmployeeId}}\",\n  \"answer\": null,\n  \"forwardToStepOrder\": 1,\n  \"forwardQuestion\": \"ขอให้ตรวจสอบข้อมูลต้นทาง...\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/workflows/info-requests/{{infoRequestId}}/respond",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workflows", "info-requests", "{{infoRequestId}}", "respond"]
+            },
+            "description": "Forward ต่อไปยัง Step ก่อนหน้า (ยังไม่รู้คำตอบ)\n\nforwardToStepOrder ต้องน้อยกว่า toStepOrder ของ request นี้\n\nScript จะ save childInfoRequestId เป็น infoRequestId ต่อ\nเพื่อให้ 'Respond — ตอบตรง' ตอบ child ต่อได้ทันที"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Info Request Thread",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/workflows/{{instanceId}}/info-requests",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workflows", "{{instanceId}}", "info-requests"]
+            },
+            "description": "ดู thread การถาม-ตอบทั้งหมดของ Instance\n\ndepth: 0 = ต้นสาย, 1 = forward ต่อ 1 ทอด, ...\nstatus: Open | Forwarded | Closed | Cancelled"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🔁 Test Scenarios",
+      "description": "Scenario สำเร็จรูปสำหรับทดสอบ Flow ทั้งหมด — อ่าน description ของแต่ละ Request",
+      "item": [
+        {
+          "name": "STEP 1 — ตรวจสอบ Position Hierarchy",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/organization/positions/{{positionCode}}/hierarchy",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "organization", "positions", "{{positionCode}}", "hierarchy"]
+            },
+            "description": "[SCENARIO] ก่อน Submit — ตรวจดูสายบังคับบัญชาของ Submitter\nดูว่า Parent chain เป็นอย่างไร และมีตำแหน่งว่างไหม"
+          },
+          "response": []
+        },
+        {
+          "name": "STEP 2 — Simulate Approval Chain",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/organization/positions/{{positionCode}}/approval-chain?docCode={{docCode}}&amount={{amount}}&isSpecialItem=false&isUrgent=false",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "organization", "positions", "{{positionCode}}", "approval-chain"],
+              "query": [
+                { "key": "docCode", "value": "{{docCode}}" },
+                { "key": "amount", "value": "{{amount}}" },
+                { "key": "isSpecialItem", "value": "false" },
+                { "key": "isUrgent", "value": "false" }
+              ]
+            },
+            "description": "[SCENARIO] Simulate ก่อน Submit จริง — ดู Approval Chain\nใช้ยืนยันว่า Config ถูกต้อง ก่อนสร้าง Workflow จริง"
+          },
+          "response": []
+        },
+        {
+          "name": "STEP 3 — Submit Workflow",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.data && body.data.instanceId) {",
+                  "        pm.collectionVariables.set('instanceId', body.data.instanceId);",
+                  "        console.log('instanceId saved:', body.data.instanceId);",
+                  "        console.log('Flow:', body.data.flowDesc);",
+                  "        console.log('Steps:', body.data.approvalChain.length);",
+                  "        body.data.approvalChain.forEach(s => {",
+                  "            console.log('  Step', s.stepOrder, '→', s.approverPositionCode, '(' + (s.occupantName || 'vacant') + ')');",
+                  "        });",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"docCode\": {{docCode}},\n  \"submitterPositionCode\": \"{{positionCode}}\",\n  \"submitterEmployeeId\": \"{{employeeId}}\",\n  \"actingAsPositionCode\": null,\n  \"totalAmount\": {{amount}},\n  \"isSpecialItem\": false,\n  \"isUrgent\": false,\n  \"subject\": \"ทดสอบ Submit เอกสาร\",\n  \"remark\": \"ทดสอบผ่าน Postman — Scenario Test\",\n  \"isCreatedBySecretary\": false\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/workflows/submit",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workflows", "submit"]
+            },
+            "description": "[SCENARIO] Submit เอกสาร\nScript จะ auto-save instanceId และ print approval chain ทั้งหมดใน Console"
+          },
+          "response": []
+        },
+        {
+          "name": "STEP 4 — ดูรายละเอียด Instance + Steps",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/workflows/{{instanceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workflows", "{{instanceId}}"]
+            },
+            "description": "[SCENARIO] ดู Instance หลัง Submit — ควรเห็น Status=Pending\nดู currentStepOrder และ steps[].approverPositionCode เพื่อรู้ว่าใครต้อง Approve"
+          },
+          "response": []
+        },
+        {
+          "name": "STEP 5 — Request Info (Step 2 ถาม Step 1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.data && body.data.infoRequestId) {",
+                  "        pm.collectionVariables.set('infoRequestId', body.data.infoRequestId);",
+                  "        console.log('infoRequestId saved:', body.data.infoRequestId);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"toStepOrder\": 1,\n  \"actorPositionCode\": \"{{approverPositionCode2}}\",\n  \"actorEmployeeId\": \"{{approverEmployeeId2}}\",\n  \"question\": \"[Scenario Test] ขอให้ยืนยันข้อมูลก่อนอนุมัติ\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/workflows/{{instanceId}}/steps/2/request-info",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workflows", "{{instanceId}}", "steps", "2", "request-info"]
+            },
+            "description": "[SCENARIO] Step 2 ขอข้อมูลจาก Step 1\nStep 2 ยังคง Pending — สามารถ Approve ได้ตลอด"
+          },
+          "response": []
+        },
+        {
+          "name": "STEP 6 — ดู Inbox ของ Step 1 (ผู้ถูกถาม)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/workflows/info-requests/pending?positionCode={{approverPositionCode}}&instanceId={{instanceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workflows", "info-requests", "pending"],
+              "query": [
+                { "key": "positionCode", "value": "{{approverPositionCode}}" },
+                { "key": "instanceId",   "value": "{{instanceId}}" }
+              ]
+            },
+            "description": "[SCENARIO] ดู Info Requests ที่ Step 1 ต้องตอบ\nจะเห็น request จาก Step 2 มีสถานะ Open"
+          },
+          "response": []
+        },
+        {
+          "name": "STEP 7 — Step 1 ตอบ Info Request",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"actorPositionCode\": \"{{approverPositionCode}}\",\n  \"actorEmployeeId\": \"{{approverEmployeeId}}\",\n  \"answer\": \"[Scenario Test] ตอบแล้ว ข้อมูลถูกต้องครบถ้วน\",\n  \"forwardToStepOrder\": null,\n  \"forwardQuestion\": null\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/workflows/info-requests/{{infoRequestId}}/respond",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workflows", "info-requests", "{{infoRequestId}}", "respond"]
+            },
+            "description": "[SCENARIO] Step 1 ตอบข้อซักถาม\nRequest ปิด (Closed) — Step 2 ยังคง Pending รอ Approve"
+          },
+          "response": []
+        },
+        {
+          "name": "STEP 8 — Approve Step 1",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"actorPositionCode\": \"{{approverPositionCode}}\",\n  \"actorEmployeeId\": \"{{approverEmployeeId}}\",\n  \"comment\": \"อนุมัติ Step 1\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/workflows/{{instanceId}}/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workflows", "{{instanceId}}", "approve"]
+            },
+            "description": "[SCENARIO] Approve Step 1\nInfo Requests ที่ค้างอยู่ของ Step 1 จะถูก auto-cancel"
+          },
+          "response": []
+        },
+        {
+          "name": "STEP 9 — Approve Step 2 (ถ้ามี)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"actorPositionCode\": \"{{approverPositionCode2}}\",\n  \"actorEmployeeId\": \"{{approverEmployeeId2}}\",\n  \"comment\": \"อนุมัติ Step 2\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/workflows/{{instanceId}}/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workflows", "{{instanceId}}", "approve"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "STEP 10 — ดู Info Request Thread (ตรวจ History)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/workflows/{{instanceId}}/info-requests",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workflows", "{{instanceId}}", "info-requests"]
+            },
+            "description": "[SCENARIO] ดู Thread ทั้งหมด — ควรเห็น request ที่ Closed\ndepth: 0 = ต้นสาย, status: Closed = ตอบแล้ว"
+          },
+          "response": []
+        },
+        {
+          "name": "STEP 11 — ดู Audit Trail (ตรวจ Events ทั้งหมด)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/workflows/{{instanceId}}/audit",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workflows", "{{instanceId}}", "audit"]
+            },
+            "description": "[SCENARIO] ตรวจ Audit Trail\nควรเห็น: Submit → InfoRequest → InfoRequest:Answered → Approve → Complete"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
