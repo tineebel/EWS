@@ -25,7 +25,7 @@ scripts/               Seed/import utilities
 ## Prerequisites
 
 - .NET SDK 8
-- Node.js 18+ and npm
+- Node.js 20.19+ or 22.12+ and npm 10+ for the Vite 8 frontend
 - SQL Server
 
 ## Local Configuration

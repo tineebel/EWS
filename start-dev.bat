@@ -1,4 +1,5 @@
 @echo off
+set "ROOT=%~dp0"
 echo Starting EWS Development Servers...
 echo.
 
@@ -6,21 +7,21 @@ echo.
 netstat -ano | findstr ":5271 " | findstr "LISTENING" >nul 2>&1
 if %errorlevel%==0 (
     echo [!] Backend port 5271 is already in use.
-    set /p KILL_API=    Kill existing process? (Y/N):
-    if /i "%KILL_API%"=="Y" (
+    choice /C YN /N /M "    Kill existing process? [Y/N]: "
+    if errorlevel 2 (
+        echo     Skipping Backend startup.
+        goto :start_frontend
+    ) else (
         for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":5271 " ^| findstr "LISTENING"') do (
             echo     Killing PID %%p...
             taskkill /PID %%p /F >nul 2>&1
         )
         timeout /t 1 /nobreak >nul
-    ) else (
-        echo     Skipping Backend startup.
-        goto :start_frontend
     )
 )
 
 echo [1/2] Starting Backend API (http://localhost:5271)...
-start "EWS API" cmd /k "cd /d D:\ClaudeCode\EWS && dotnet run --project src/EWS.API/EWS.API.csproj"
+start "EWS API" cmd /k "pushd ""%ROOT%"" && dotnet run --project src\EWS.API\EWS.API.csproj"
 timeout /t 3 /nobreak >nul
 
 :: ---- Check Frontend (port 3000) ----
@@ -28,21 +29,21 @@ timeout /t 3 /nobreak >nul
 netstat -ano | findstr ":3000 " | findstr "LISTENING" >nul 2>&1
 if %errorlevel%==0 (
     echo [!] Frontend port 3000 is already in use.
-    set /p KILL_WEB=    Kill existing process? (Y/N):
-    if /i "%KILL_WEB%"=="Y" (
+    choice /C YN /N /M "    Kill existing process? [Y/N]: "
+    if errorlevel 2 (
+        echo     Skipping Frontend startup.
+        goto :summary
+    ) else (
         for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":3000 " ^| findstr "LISTENING"') do (
             echo     Killing PID %%p...
             taskkill /PID %%p /F >nul 2>&1
         )
         timeout /t 1 /nobreak >nul
-    ) else (
-        echo     Skipping Frontend startup.
-        goto :summary
     )
 )
 
 echo [2/2] Starting Frontend (http://localhost:3000)...
-start "EWS Web" cmd /k "cd /d D:\ClaudeCode\EWS\src\EWS.Web && npm run dev"
+start "EWS Web" cmd /k "pushd ""%ROOT%src\EWS.Web"" && npm run dev"
 
 echo.
 echo Waiting for services to start...
