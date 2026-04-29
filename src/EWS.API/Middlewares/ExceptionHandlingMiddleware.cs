@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using EWS.API.Models;
 using FluentValidation;
+using Microsoft.EntityFrameworkCore;
 
 namespace EWS.API.Middlewares;
 
@@ -23,6 +24,15 @@ public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Exception
             context.Response.ContentType = "application/json";
             await context.Response.WriteAsync(JsonSerializer.Serialize(
                 JsendResponse.Fail("Validation failed.", errors),
+                new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }));
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            logger.LogWarning(ex, "Concurrency conflict: {Message}", ex.Message);
+            context.Response.StatusCode = (int)HttpStatusCode.Conflict;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsync(JsonSerializer.Serialize(
+                JsendResponse.Fail("The record was changed by another action. Please refresh and try again."),
                 new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }));
         }
         catch (Exception ex)

@@ -62,12 +62,12 @@ public class WorkflowEngine(AppDbContext db, IApproverResolver approverResolver)
         return (final[0], null, null);
     }
 
-    public async Task<List<ResolvedApprover>> ResolveAllApproversAsync(
+    public async Task<List<ResolvedApprover?>> ResolveAllApproversAsync(
         WorkflowTemplate template,
         int submitterPositionId,
         CancellationToken ct = default)
     {
-        var results = new List<ResolvedApprover>();
+        var results = new List<ResolvedApprover?>();
 
         foreach (var step in template.Steps.OrderBy(s => s.StepOrder))
         {
@@ -77,8 +77,7 @@ public class WorkflowEngine(AppDbContext db, IApproverResolver approverResolver)
                 step.SpecificPositionCode,
                 ct);
 
-            if (resolved != null)
-                results.Add(resolved);
+            results.Add(resolved);
         }
 
         return results;

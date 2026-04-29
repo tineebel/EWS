@@ -1,3 +1,4 @@
+using EWS.Application.Common;
 using EWS.Domain.Enums;
 using FluentValidation;
 
@@ -18,6 +19,22 @@ public class UpdateWorkflowTemplateValidator : AbstractValidator<UpdateWorkflowT
 
         RuleFor(x => x.Steps)
             .NotEmpty().WithMessage("At least one step is required.");
+
+        RuleFor(x => x.Condition1)
+            .Must(WorkflowConditionEvaluator.IsValid)
+            .WithMessage("Condition1 must be empty, NULL, or a valid amount condition such as > 1000, <= 5000, or = 0.");
+        RuleFor(x => x.Condition2)
+            .Must(WorkflowConditionEvaluator.IsValid)
+            .WithMessage("Condition2 must be empty, NULL, or a valid amount condition such as > 1000, <= 5000, or = 0.");
+        RuleFor(x => x.Condition3)
+            .Must(WorkflowConditionEvaluator.IsValid)
+            .WithMessage("Condition3 must be empty, NULL, or a valid amount condition such as > 1000, <= 5000, or = 0.");
+        RuleFor(x => x.Condition4)
+            .Must(WorkflowConditionEvaluator.IsValid)
+            .WithMessage("Condition4 must be empty, NULL, or a valid amount condition such as > 1000, <= 5000, or = 0.");
+        RuleFor(x => x.Condition5)
+            .Must(WorkflowConditionEvaluator.IsValid)
+            .WithMessage("Condition5 must be empty, NULL, or a valid amount condition such as > 1000, <= 5000, or = 0.");
 
         RuleForEach(x => x.Steps).ChildRules(step =>
         {

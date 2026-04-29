@@ -1,3 +1,4 @@
+using EWS.Application.Common;
 using EWS.Application.Common.Interfaces;
 using EWS.Application.Common.Models;
 using EWS.Domain.Entities;
@@ -45,6 +46,13 @@ public class RequestInfoHandler(IAppDbContext db, IDateTimeService clock)
                 $"Position '{request.ActorPositionCode}' is not assigned to step {request.FromStepOrder}.");
 
         // ตรวจ ToStep — ต้องเป็น Step ที่ผ่านไปแล้ว (Approved) หรือ Pending ก่อนหน้า
+        var hasActorAssignment = await WorkflowActorVerifier.HasActiveAssignmentAsync(
+            db, fromApproval.AssignedPositionId, request.ActorEmployeeId, now, ct);
+
+        if (!hasActorAssignment)
+            return Result<InfoRequestDto>.Fail("WF_UNAUTHORIZED",
+                "Employee does not have an active assignment for the actor position.");
+
         var toApproval = await db.WorkflowApprovals
             .Include(a => a.AssignedPosition)
             .Include(a => a.ActorEmployee)

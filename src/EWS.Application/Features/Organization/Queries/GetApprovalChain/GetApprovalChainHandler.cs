@@ -28,11 +28,12 @@ public class GetApprovalChainHandler(IAppDbContext db, IWorkflowEngine engine)
         if (template == null)
             return Result<ApprovalChainDto>.Fail(errCode!, errMsg!);
 
+        var resolved = await engine.ResolveAllApproversAsync(template, submitter.PositionId, ct);
         var stepResults = new List<ApprovalChainStepDto>();
+        var index = 0;
         foreach (var step in template.Steps.OrderBy(s => s.StepOrder))
         {
-            var resolved = await engine.ResolveAllApproversAsync(template, submitter.PositionId, ct);
-            var r = resolved.ElementAtOrDefault(step.StepOrder - 1);
+            var r = resolved.ElementAtOrDefault(index++);
 
             stepResults.Add(new ApprovalChainStepDto(
                 step.StepOrder, step.StepName,

@@ -1,5 +1,8 @@
+using System.Data;
 using EWS.Application.Common.Interfaces;
+using EWS.Domain.Entities;
 using EWS.Infrastructure.Persistence;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace EWS.Infrastructure.Services;
@@ -24,12 +27,42 @@ public class DocumentNumberService(AppDbContext db, IDateTimeService clock) : ID
     {
         var prefix = DocPrefixes.GetValueOrDefault(docCode, $"DOC{docCode}");
         var year = clock.Now.Year;
-        var yearPrefix = $"{prefix}-{year}-";
+        var sequencePrefix = $"{prefix}-{year}";
 
-        var count = await db.WorkflowInstances
-            .Where(x => x.DocumentNo.StartsWith(yearPrefix))
-            .CountAsync(ct);
+        await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
 
-        return $"{yearPrefix}{(count + 1):D5}";
+        if (db.Database.IsSqlServer())
+        {
+            var lockResource = $"EWS:DOCNO:{prefix}:{year}";
+            await db.Database.ExecuteSqlRawAsync(
+                "EXEC sp_getapplock @Resource = @resource, @LockMode = 'Exclusive', @LockOwner = 'Transaction', @LockTimeout = 10000",
+                [new SqlParameter("@resource", lockResource)],
+                ct);
+        }
+
+        var sequence = await db.WorkflowDocumentSequences
+            .FirstOrDefaultAsync(x => x.Prefix == prefix && x.Year == year, ct);
+
+        if (sequence == null)
+        {
+            sequence = new WorkflowDocumentSequence
+            {
+                Prefix = prefix,
+                Year = year,
+                LastNumber = 0,
+                CreatedAt = clock.Now,
+                CreatedBy = "SYSTEM"
+            };
+            db.WorkflowDocumentSequences.Add(sequence);
+        }
+
+        sequence.LastNumber++;
+        sequence.UpdatedAt = clock.Now;
+        sequence.UpdatedBy = "SYSTEM";
+
+        await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
+
+        return $"{sequencePrefix}-{sequence.LastNumber:D5}";
     }
 }

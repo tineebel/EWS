@@ -42,4 +42,6 @@ public class WorkflowApproval : BaseEntity
 
     /// <summary>ถ้า Escalate → บันทึก Original PositionId ก่อน Escalate</summary>
     public int? EscalatedFromPositionId { get; set; }
+
+    public byte[] RowVersion { get; set; } = [];
 }

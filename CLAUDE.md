@@ -111,3 +111,26 @@ dotnet test : รันชุดทดสอบทั้งหมด (Unit & Int
 Delegation Audit: บันทึกทั้ง OriginalUserId (คนกด) และ ActingAsPositionId (ตำแหน่งที่ทำแทน)
 
 Audit Trail: ตาราง WorkflowHistory และ AuditLogs ต้องเป็น Insert-Only (Immutable)
+
+11. Frontend UI Standard
+
+For all frontend/UI work in `src/EWS.Web`, follow the project UI master instruction:
+
+- `docs/EWS_UI_System_Instruction.md`
+
+All new UI must use React 18, TypeScript, Ant Design v5, `@ant-design/icons`, React Query, and the existing project patterns. UI styling must be token-driven: use Ant Design theme tokens or project utility classes that map to theme config. Do not hard-code colors, spacing, typography, radius, or shadows directly in classes or inline styles.
+
+Before finishing any UI change, verify loading, empty, error, disabled, hover, active, and responsive states. Tables must have `rowKey`, loading state, pagination when needed, and horizontal scroll for wide data. Forms must validate before submit and prevent duplicate submission.
+
+12. Required Work Cycle
+
+For non-trivial code or documentation changes, every AI agent must follow this workflow:
+
+1. Ask: clarify the goal only when the request is ambiguous or risky.
+2. Plan: identify the smallest safe implementation path and affected files.
+3. Implement: make scoped changes that follow the project architecture and patterns.
+4. Review Diff: inspect the diff for correctness, unintended edits, secrets, formatting issues, and missing tests.
+5. Run/Test: run the relevant build, tests, smoke checks, or explain why they could not be run.
+6. Commit: commit only after review and verification, and only when the user has asked for or approved a commit.
+
+Do not skip Review Diff before Commit. If a test or build fails, fix the cause or clearly document the remaining blocker before committing.

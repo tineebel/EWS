@@ -91,6 +91,15 @@ public class SubmitWorkflowHandler(
         var resolveFromPositionId = requiresPreApproval ? chiefPositionId!.Value : submitterPos.PositionId;
         var resolvedApprovers = await engine.ResolveAllApproversAsync(template, resolveFromPositionId, ct);
 
+        var unresolvedStep = template.Steps
+            .OrderBy(s => s.StepOrder)
+            .Select((step, index) => new { Step = step, Resolved = resolvedApprovers.ElementAtOrDefault(index) })
+            .FirstOrDefault(x => x.Resolved == null);
+
+        if (unresolvedStep != null)
+            return Result<SubmitWorkflowDto>.Fail("WF_APPROVER_NOT_RESOLVED",
+                $"Could not resolve approver for step {unresolvedStep.Step.StepOrder} ({unresolvedStep.Step.StepName}).");
+
         // 7. Generate document number
         var docNo = await docNoService.GenerateAsync(request.DocCode, ct);
 
@@ -126,9 +135,7 @@ public class SubmitWorkflowHandler(
         for (int i = 0; i < stepList.Count; i++)
         {
             var step = stepList[i];
-            var resolved = i < resolvedApprovers.Count ? resolvedApprovers[i] : null;
-
-            if (resolved == null) continue;
+            var resolved = resolvedApprovers[i]!;
 
             db.WorkflowApprovals.Add(new WorkflowApproval
             {
@@ -137,7 +144,7 @@ public class SubmitWorkflowHandler(
                 StepOrder = step.StepOrder,
                 AssignedPositionId = resolved.PositionId,
                 Status = ApprovalStatus.Pending,
-                EscalatedFromPositionId = resolved.WasEscalated ? resolved.PositionId : null,
+                EscalatedFromPositionId = resolved.EscalatedFromPositionId,
                 CreatedAt = now,
                 CreatedBy = request.SubmitterEmployeeId.ToString()
             });

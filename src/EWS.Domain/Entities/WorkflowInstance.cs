@@ -72,4 +72,6 @@ public class WorkflowInstance : BaseEntity
     // Navigation
     public ICollection<WorkflowApproval> Approvals { get; set; } = [];
     public ICollection<WorkflowHistory> Histories { get; set; } = [];
+
+    public byte[] RowVersion { get; set; } = [];
 }

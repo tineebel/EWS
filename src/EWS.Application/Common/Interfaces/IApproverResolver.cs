@@ -12,7 +12,8 @@ public record ResolvedApprover(
     string? OccupantName,
     bool IsVacant,
     int? DelegatedToPositionId,
-    string? DelegatedToPositionCode
+    string? DelegatedToPositionCode,
+    int? EscalatedFromPositionId = null
 );
 
 public interface IApproverResolver

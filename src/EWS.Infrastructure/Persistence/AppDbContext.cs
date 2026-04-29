@@ -24,6 +24,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<WorkflowHistory> WorkflowHistories => Set<WorkflowHistory>();
     public DbSet<WorkflowInfoRequest> WorkflowInfoRequests => Set<WorkflowInfoRequest>();
     public DbSet<WorkflowTemplateAuditLog> WorkflowTemplateAuditLogs => Set<WorkflowTemplateAuditLog>();
+    public DbSet<WorkflowDocumentSequence> WorkflowDocumentSequences => Set<WorkflowDocumentSequence>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

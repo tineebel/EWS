@@ -1,11 +1,11 @@
 {
   "info": {
     "name": "EWS — Enterprise Workflow System",
-    "description": "API Collection สำหรับทดสอบระบบ Approval Workflow แบบ Position-Based\n\n**Base URL**: http://localhost:5062\n\n**วิธีใช้:**\n1. Import collection นี้เข้า Postman\n2. Import Environment `EWS_Local.postman_environment.json`\n3. เลือก Environment เป็น `EWS Local`\n4. เริ่มจาก `Organization` → ดู hierarchy ก่อน\n5. จากนั้น `Workflows/Submit` แล้วตาม approve ทีละ step\n\n**Variable ที่ auto-save:**\n- `instanceId` — save อัตโนมัติหลัง Submit\n- `infoRequestId` — save อัตโนมัติหลัง Request Info",
+    "description": "API Collection สำหรับทดสอบระบบ Approval Workflow แบบ Position-Based\n\n**Base URL**: http://localhost:5271\n\n**วิธีใช้:**\n1. Import collection นี้เข้า Postman\n2. Import Environment `EWS_Local.postman_environment.json`\n3. เลือก Environment เป็น `EWS Local`\n4. เริ่มจาก `Organization` → ดู hierarchy ก่อน\n5. จากนั้น `Workflows/Submit` แล้วตาม approve ทีละ step\n\n**Variable ที่ auto-save:**\n- `instanceId` — save อัตโนมัติหลัง Submit\n- `infoRequestId` — save อัตโนมัติหลัง Request Info",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl",                "value": "http://localhost:5062",  "type": "string" },
+    { "key": "baseUrl",                "value": "http://localhost:5271",  "type": "string" },
     { "key": "instanceId",             "value": "",  "type": "string", "description": "Auto-saved after Submit" },
     { "key": "infoRequestId",          "value": "",  "type": "string", "description": "Auto-saved after Request Info" },
     { "key": "positionCode",           "value": "HOSTAFF01", "type": "string" },

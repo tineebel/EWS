@@ -23,7 +23,7 @@ public interface IWorkflowEngine
     /// <summary>
     /// Resolve ผู้อนุมัติทุก Step ของ Template จาก submitterPositionId
     /// </summary>
-    Task<List<ResolvedApprover>> ResolveAllApproversAsync(
+    Task<List<ResolvedApprover?>> ResolveAllApproversAsync(
         WorkflowTemplate template,
         int submitterPositionId,
         CancellationToken ct = default);

@@ -21,6 +21,7 @@ public interface IAppDbContext
     DbSet<WorkflowHistory> WorkflowHistories { get; }
     DbSet<WorkflowInfoRequest> WorkflowInfoRequests { get; }
     DbSet<WorkflowTemplateAuditLog> WorkflowTemplateAuditLogs { get; }
+    DbSet<WorkflowDocumentSequence> WorkflowDocumentSequences { get; }
 
     Task<int> SaveChangesAsync(CancellationToken ct = default);
 }

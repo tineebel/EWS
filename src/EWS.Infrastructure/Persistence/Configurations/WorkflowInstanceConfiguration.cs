@@ -19,6 +19,7 @@ public class WorkflowInstanceConfiguration : IEntityTypeConfiguration<WorkflowIn
         builder.Property(x => x.Remark).HasMaxLength(2000);
         builder.Property(x => x.CreatedBy).HasMaxLength(100);
         builder.Property(x => x.UpdatedBy).HasMaxLength(100);
+        builder.Property(x => x.RowVersion).IsRowVersion();
 
         builder.HasIndex(x => x.DocumentNo).IsUnique();
         builder.HasIndex(x => new { x.Status, x.SubmittedAt })

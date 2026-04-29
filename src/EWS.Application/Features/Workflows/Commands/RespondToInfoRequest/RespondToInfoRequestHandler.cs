@@ -1,3 +1,4 @@
+using EWS.Application.Common;
 using EWS.Application.Common.Interfaces;
 using EWS.Application.Common.Models;
 using EWS.Domain.Entities;
@@ -33,6 +34,13 @@ public class RespondToInfoRequestHandler(IAppDbContext db, IDateTimeService cloc
         if (infoRequest.ToPosition.PositionCode != request.ActorPositionCode)
             return Result<RespondToInfoRequestDto>.Fail("WF_UNAUTHORIZED",
                 $"Position '{request.ActorPositionCode}' is not the recipient of this info request.");
+
+        var hasActorAssignment = await WorkflowActorVerifier.HasActiveAssignmentAsync(
+            db, infoRequest.ToPositionId, request.ActorEmployeeId, now, ct);
+
+        if (!hasActorAssignment)
+            return Result<RespondToInfoRequestDto>.Fail("WF_UNAUTHORIZED",
+                "Employee does not have an active assignment for the actor position.");
 
         var instance = await db.WorkflowInstances
             .FirstOrDefaultAsync(x => x.InstanceId == infoRequest.InstanceId, ct);

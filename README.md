@@ -81,6 +81,44 @@ Backend solution:
 dotnet build EWS.sln
 ```
 
+If MSBuild spawns too many `dotnet.exe` processes on Windows, run a single-node
+build:
+
+```powershell
+dotnet build EWS.sln -m:1 -nr:false
+```
+
+## Test
+
+Run all unit and integration tests:
+
+```powershell
+dotnet test EWS.sln
+```
+
+SQL Server integration tests create and drop a temporary database named
+`EWS_IntegrationTests_{guid}`. By default, tests read the local API connection
+string from `src\EWS.API\appsettings.json`. For CI or safer local runs, set a
+dedicated SQL Server test connection:
+
+```powershell
+$env:EWS_TEST_CONNECTION_STRING="Server=localhost,1433;Database=master;User Id=sa;Password=YOUR_TEST_PASSWORD;Encrypt=False;TrustServerCertificate=True;"
+dotnet test EWS.sln
+```
+
+Run a quick API smoke test against a running local API:
+
+```powershell
+.\scripts\api-smoke.ps1
+```
+
+The smoke test verifies Swagger and read-only DB-backed endpoints. If your API
+uses a custom URL, pass it explicitly:
+
+```powershell
+.\scripts\api-smoke.ps1 -BaseUrl http://127.0.0.1:5271
+```
+
 Frontend:
 
 ```powershell

@@ -15,6 +15,7 @@ public class WorkflowApprovalConfiguration : IEntityTypeConfiguration<WorkflowAp
         builder.Property(x => x.Comment).HasMaxLength(2000);
         builder.Property(x => x.CreatedBy).HasMaxLength(100);
         builder.Property(x => x.UpdatedBy).HasMaxLength(100);
+        builder.Property(x => x.RowVersion).IsRowVersion();
 
         builder.HasIndex(x => new { x.InstanceId, x.StepOrder })
             .HasDatabaseName("IX_WorkflowApproval_InstanceStep");

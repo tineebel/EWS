@@ -1,3 +1,4 @@
+using EWS.Application.Common;
 using EWS.Application.Common.Interfaces;
 using EWS.Application.Common.Models;
 using EWS.Domain.Entities;
@@ -48,6 +49,13 @@ public class ApproveWorkflowHandler(IAppDbContext db, IDateTimeService clock)
                 $"Actor position '{request.ActorPositionCode}' not found.");
 
         // ตรวจสอบว่า Actor มีสิทธิ์: ตรงกับ AssignedPosition หรือมี Delegation
+        var hasActorAssignment = await WorkflowActorVerifier.HasActiveAssignmentAsync(
+            db, actorPos.PositionId, request.ActorEmployeeId, now, ct);
+
+        if (!hasActorAssignment)
+            return Result<ApproveWorkflowDto>.Fail("WF_UNAUTHORIZED",
+                "Employee does not have an active assignment for the actor position.");
+
         bool isAssigned = actorPos.PositionId == currentApproval.AssignedPositionId;
         int? actingAsPositionId = null;
 

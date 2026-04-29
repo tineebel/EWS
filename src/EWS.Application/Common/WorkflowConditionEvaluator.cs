@@ -1,8 +1,11 @@
+using System.Globalization;
+
 namespace EWS.Application.Common;
 
 /// <summary>
-/// ประเมินเงื่อนไขใน WorkflowTemplate.Condition1..5
-/// Format: "> 1000", "&lt;= 5000", "= 0", "NULL" (null/empty = always true)
+/// Evaluates WorkflowTemplate.Condition1..5.
+/// Supported format: "&gt; 1000", "&lt;= 5000", "= 0", "NULL".
+/// Null or empty conditions match; invalid condition strings do not match.
 /// </summary>
 public static class WorkflowConditionEvaluator
 {
@@ -11,23 +14,19 @@ public static class WorkflowConditionEvaluator
         if (string.IsNullOrWhiteSpace(condition) || condition.Equals("NULL", StringComparison.OrdinalIgnoreCase))
             return true;
 
-        condition = condition.Trim();
+        if (!TryParse(condition.Trim(), out var op, out var value))
+            return false;
 
-        if (TryParse(condition, out var op, out var value))
+        var amt = amount ?? 0m;
+        return op switch
         {
-            var amt = amount ?? 0m;
-            return op switch
-            {
-                ">=" => amt >= value,
-                "<=" => amt <= value,
-                ">"  => amt > value,
-                "<"  => amt < value,
-                "="  => amt == value,
-                _    => true
-            };
-        }
-
-        return true; // ถ้า parse ไม่ได้ → ถือว่าตรงเงื่อนไข (log warning แยก)
+            ">=" => amt >= value,
+            "<=" => amt <= value,
+            ">"  => amt > value,
+            "<"  => amt < value,
+            "="  => amt == value,
+            _    => false
+        };
     }
 
     private static bool TryParse(string condition, out string op, out decimal value)
@@ -35,13 +34,13 @@ public static class WorkflowConditionEvaluator
         op = string.Empty;
         value = 0m;
 
-        // ลอง match operator ยาวสุดก่อน (>=, <=) แล้วค่อย (>, <, =)
         foreach (var candidate in new[] { ">=", "<=", ">", "<", "=" })
         {
-            if (!condition.StartsWith(candidate)) continue;
+            if (!condition.StartsWith(candidate, StringComparison.Ordinal)) continue;
 
             var numPart = condition[candidate.Length..].Trim().Replace(",", "");
-            if (!decimal.TryParse(numPart, out value)) continue;
+            if (!decimal.TryParse(numPart, NumberStyles.Number, CultureInfo.InvariantCulture, out value))
+                continue;
 
             op = candidate;
             return true;
@@ -50,9 +49,6 @@ public static class WorkflowConditionEvaluator
         return false;
     }
 
-    /// <summary>
-    /// ตรวจสอบว่า condition string ถูกต้องหรือไม่ (ใช้ตอน Seed validation)
-    /// </summary>
     public static bool IsValid(string? condition)
     {
         if (string.IsNullOrWhiteSpace(condition) || condition.Equals("NULL", StringComparison.OrdinalIgnoreCase))

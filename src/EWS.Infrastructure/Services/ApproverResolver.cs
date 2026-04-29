@@ -113,6 +113,7 @@ public class ApproverResolver(AppDbContext db, IDateTimeService clock) : IApprov
     {
         var now = clock.Now;
         var visited = new HashSet<int>();
+        var originalPositionId = positionId;
         var current = positionId;
         int escalationDepth = 0;
 
@@ -161,7 +162,8 @@ public class ApproverResolver(AppDbContext db, IDateTimeService clock) : IApprov
                     OccupantName: occupant!.EmployeeName,
                     IsVacant: false,
                     DelegatedToPositionId: delegation?.ToPositionId,
-                    DelegatedToPositionCode: delegation?.ToCode
+                    DelegatedToPositionCode: delegation?.ToCode,
+                    EscalatedFromPositionId: escalationDepth > 0 ? originalPositionId : null
                 );
             }
 

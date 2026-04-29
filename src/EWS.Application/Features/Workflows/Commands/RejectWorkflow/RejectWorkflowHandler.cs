@@ -1,3 +1,4 @@
+using EWS.Application.Common;
 using EWS.Application.Common.Interfaces;
 using EWS.Application.Common.Models;
 using EWS.Domain.Entities;
@@ -32,6 +33,13 @@ public class RejectWorkflowHandler(IAppDbContext db, IDateTimeService clock)
         if (actorPos == null)
             return Result<bool>.Fail("WF_POSITION_NOT_FOUND",
                 $"Actor position '{request.ActorPositionCode}' not found.");
+
+        var hasActorAssignment = await WorkflowActorVerifier.HasActiveAssignmentAsync(
+            db, actorPos.PositionId, request.ActorEmployeeId, now, ct);
+
+        if (!hasActorAssignment)
+            return Result<bool>.Fail("WF_UNAUTHORIZED",
+                "Employee does not have an active assignment for the actor position.");
 
         var currentApproval = await db.WorkflowApprovals
             .Where(a => a.InstanceId == request.InstanceId && a.Status == ApprovalStatus.Pending)
