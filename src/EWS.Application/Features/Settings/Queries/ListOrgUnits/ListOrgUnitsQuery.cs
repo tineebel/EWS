@@ -14,8 +14,8 @@ public record DepartmentOptionDto(
     string DeptCode,
     string DeptName,
     string? DeptNameEn,
-    string DivisionCode,
-    string DivisionName,
+    string? DivisionCode,
+    string? DivisionName,
     bool IsActive);
 
 public record SectionOptionDto(
