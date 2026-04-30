@@ -11,6 +11,7 @@ public class ListDepartmentsHandler(IAppDbContext db)
     public async Task<Result<List<DepartmentOptionDto>>> Handle(ListDepartmentsQuery req, CancellationToken ct)
     {
         var q = db.Departments
+            .Include(d => d.Division)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(req.Search))
@@ -29,8 +30,8 @@ public class ListDepartmentsHandler(IAppDbContext db)
                 d.DeptCode,
                 d.DeptName,
                 d.DeptNameEn,
-                null,
-                null,
+                d.Division.DivisionCode,
+                d.Division.DivisionName,
                 d.IsActive))
             .ToListAsync(ct);
 
