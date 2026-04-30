@@ -19,9 +19,9 @@ public class OrganizationController(IMediator mediator) : ApiControllerBase
     /// ใช้สำหรับ visualize สายบังคับบัญชา
     /// </summary>
     [HttpGet("org-chart")]
-    public async Task<IActionResult> GetOrgChart([FromQuery] string? rootCode, CancellationToken ct)
+    public async Task<IActionResult> GetOrgChart([FromQuery] string? rootCode, [FromQuery] string? branchCode, [FromQuery] string? deptCode, [FromQuery] string? sectionCode, CancellationToken ct)
     {
-        var result = await mediator.Send(new GetOrgChartQuery(rootCode), ct);
+        var result = await mediator.Send(new GetOrgChartQuery(rootCode, branchCode, deptCode, sectionCode), ct);
         return FromResult(result);
     }
 

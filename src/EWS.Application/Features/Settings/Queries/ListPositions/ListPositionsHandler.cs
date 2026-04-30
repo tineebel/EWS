@@ -1,5 +1,6 @@
 using EWS.Application.Common.Interfaces;
 using EWS.Application.Common.Models;
+using EWS.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -31,6 +32,20 @@ public class ListPositionsHandler(IAppDbContext db)
 
         if (req.IsActive.HasValue)
             q = q.Where(p => p.IsActive == req.IsActive.Value);
+
+        if (!string.IsNullOrWhiteSpace(req.BranchCode))
+        {
+            var branchCode = req.BranchCode.Trim().ToUpper();
+
+            q = branchCode switch
+            {
+                "HO" => q.Where(p => p.WfScopeType == WfScopeType.Ho),
+                _ => q.Where(p =>
+                    p.WfScopeType == WfScopeType.Branch &&
+                    (p.Section.SectCode.ToUpper() == branchCode ||
+                     (p.Section.SectShortCode != null && p.Section.SectShortCode.ToUpper() == branchCode)))
+            };
+        }
 
         if (!string.IsNullOrWhiteSpace(req.DeptCode))
             q = q.Where(p => p.Section.Department.DeptCode == req.DeptCode);

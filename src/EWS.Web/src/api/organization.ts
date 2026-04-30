@@ -13,10 +13,10 @@ export interface OrgChartNode {
 }
 
 export const organizationApi = {
-  orgChart: (rootCode?: string) =>
+  orgChart: (rootCode?: string, branchCode?: string, deptCode?: string, sectionCode?: string) =>
     api
       .get<JsendData<OrgChartNode[]>>('/organization/org-chart', {
-        params: rootCode ? { rootCode } : {},
+        params: { rootCode, branchCode, deptCode, sectionCode },
       })
       .then(r => r.data),
 }

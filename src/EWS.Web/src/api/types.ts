@@ -75,6 +75,14 @@ export interface SectionOption {
   isActive: boolean
 }
 
+export interface BranchOption {
+  sectionId: number
+  branchCode: string
+  branchShortCode?: string
+  branchName: string
+  positionCount: number
+}
+
 export interface PositionAssignmentDetail {
   assignmentId: number
   positionCode: string

@@ -27,16 +27,18 @@ export default function PositionList() {
   const columnWidth = token.controlHeightLG
   const [search, setSearch] = useState('')
   const [isActive, setIsActive] = useState<boolean | undefined>(true)
+  const [branchCode, setBranchCode] = useState('HO')
   const [deptCode, setDeptCode] = useState<string | undefined>()
   const [sectionCode, setSectionCode] = useState<string | undefined>()
   const [pagination, setPagination] = useState({ page: 1, pageSize: 20 })
   const [selectedCode, setSelectedCode] = useState<string | null>(null)
 
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['positions', search, isActive, deptCode, sectionCode, pagination],
+    queryKey: ['positions', search, isActive, branchCode, deptCode, sectionCode, pagination],
     queryFn: () => settingsApi.positions.list({
       search: search || undefined,
       isActive,
+      branchCode,
       deptCode,
       sectionCode,
       ...pagination,
@@ -46,6 +48,11 @@ export default function PositionList() {
   const departments = useQuery({
     queryKey: ['department-options'],
     queryFn: () => settingsApi.departments.list({ isActive: true }),
+  })
+
+  const branchOptions = useQuery({
+    queryKey: ['branch-options'],
+    queryFn: () => settingsApi.branchOptions.list(),
   })
 
   const sections = useQuery({
@@ -185,6 +192,24 @@ export default function PositionList() {
               { value: 'all', label: 'All' },
               { value: 'active', label: 'Active' },
               { value: 'inactive', label: 'Inactive' },
+            ]}
+          />
+          <Select
+            showSearch
+            loading={branchOptions.isLoading}
+            optionFilterProp="label"
+            style={{ width: token.controlHeightLG * 6 }}
+            value={branchCode}
+            onChange={(value) => {
+              setBranchCode(value)
+              setPagination((current) => ({ ...current, page: 1 }))
+            }}
+            options={[
+              { value: 'HO', label: 'HO' },
+              ...(branchOptions.data?.data ?? []).map((branch) => ({
+                value: branch.branchCode,
+                label: formatShortCodeName(branch.branchShortCode, branch.branchCode, branch.branchName),
+              })),
             ]}
           />
           <Select

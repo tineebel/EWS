@@ -53,13 +53,14 @@ public class SettingsController(IMediator mediator) : ApiControllerBase
     public async Task<IActionResult> ListPositions(
         [FromQuery] string? search,
         [FromQuery] bool? isActive,
+        [FromQuery] string? branchCode,
         [FromQuery] string? deptCode,
         [FromQuery] string? sectionCode,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken ct = default)
     {
-        var result = await mediator.Send(new ListPositionsQuery(search, isActive, deptCode, sectionCode, page, pageSize), ct);
+        var result = await mediator.Send(new ListPositionsQuery(search, isActive, branchCode, deptCode, sectionCode, page, pageSize), ct);
         if (!result.IsSuccess) return Fail($"[{result.ErrorCode}] {result.Error}");
         return Paginated(result.Value!);
     }
@@ -85,6 +86,13 @@ public class SettingsController(IMediator mediator) : ApiControllerBase
         return FromResult(result);
     }
 
+    [HttpGet("branch-options")]
+    public async Task<IActionResult> ListBranchOptions(CancellationToken ct = default)
+    {
+        var result = await mediator.Send(new ListBranchOptionsQuery(), ct);
+        return FromResult(result);
+    }
+
     [HttpGet("positions/{positionCode}")]
     public async Task<IActionResult> GetPositionDetail(string positionCode, CancellationToken ct = default)
     {
@@ -98,13 +106,14 @@ public class SettingsController(IMediator mediator) : ApiControllerBase
     public async Task<IActionResult> ListEmployees(
         [FromQuery] string? search,
         [FromQuery] string? status,
+        [FromQuery] string? branchCode,
         [FromQuery] string? deptCode,
         [FromQuery] string? sectionCode,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken ct = default)
     {
-        var result = await mediator.Send(new ListEmployeesQuery(search, status, deptCode, sectionCode, page, pageSize), ct);
+        var result = await mediator.Send(new ListEmployeesQuery(search, status, branchCode, deptCode, sectionCode, page, pageSize), ct);
         if (!result.IsSuccess) return Fail($"[{result.ErrorCode}] {result.Error}");
         return Paginated(result.Value!);
     }

@@ -12,8 +12,36 @@ public class GetOrgChartHandler(IAppDbContext db, IDateTimeService clock)
     {
         var now = clock.Now;
 
-        var positions = await db.Positions
+        var positionsQuery = db.Positions
+            .Include(p => p.Section)
+                .ThenInclude(s => s.Department)
             .Where(p => p.IsActive)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(request.BranchCode))
+        {
+            var branch = request.BranchCode.Trim().ToUpper();
+            if (branch != "HO")
+            {
+                positionsQuery = positionsQuery.Where(p =>
+                    p.Section.SectCode.ToUpper() == branch ||
+                    (p.Section.SectShortCode != null && p.Section.SectShortCode.ToUpper() == branch));
+            }
+        }
+
+        if (!string.IsNullOrEmpty(request.DeptCode))
+        {
+            positionsQuery = positionsQuery.Where(p =>
+                p.Section.Department.DeptCode == request.DeptCode);
+        }
+
+        if (!string.IsNullOrEmpty(request.SectionCode))
+        {
+            positionsQuery = positionsQuery.Where(p =>
+                p.Section.SectCode == request.SectionCode);
+        }
+
+        var positions = await positionsQuery
             .Select(p => new
             {
                 p.PositionId,
@@ -22,7 +50,9 @@ public class GetOrgChartHandler(IAppDbContext db, IDateTimeService clock)
                 p.JobGrade,
                 p.IsChiefLevel,
                 p.ParentPositionId,
-                p.SecretaryPositionId
+                p.SecretaryPositionId,
+                SectionCode = p.Section.SectCode,
+                SectionShortCode = p.Section.SectShortCode
             })
             .ToListAsync(ct);
 
@@ -30,7 +60,7 @@ public class GetOrgChartHandler(IAppDbContext db, IDateTimeService clock)
             .Where(a => a.IsActive && !a.IsVacant
                 && a.StartDate <= now
                 && (a.EndDate == null || a.EndDate >= now))
-            .Join(db.Employees, a => a.EmployeeId, e => e.EmployeeId,
+            .Join(db.Employees.Where(e => !e.IsTest), a => a.EmployeeId, e => e.EmployeeId,
                 (a, e) => new { a.PositionId, e.EmployeeName })
             .ToListAsync(ct);
 

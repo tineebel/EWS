@@ -3,7 +3,7 @@ using MediatR;
 
 namespace EWS.Application.Features.Settings.Queries.ListEmployees;
 
-public record ListEmployeesQuery(string? Search, string? Status, string? DeptCode, string? SectionCode, int Page, int PageSize)
+public record ListEmployeesQuery(string? Search, string? Status, string? BranchCode, string? DeptCode, string? SectionCode, int Page, int PageSize)
     : IRequest<Result<PaginatedList<EmployeeDto>>>;
 
 public record EmployeeDto(

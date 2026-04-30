@@ -2,11 +2,13 @@ import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Tree, TreeNode } from 'react-organizational-chart'
 import {
+  Avatar,
   Breadcrumb,
   Button,
   Card,
   Empty,
   Input,
+  Select,
   Space,
   Spin,
   Tag,
@@ -22,11 +24,13 @@ import {
   UserOutlined,
 } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
+import { settingsApi } from '../../api/settings'
+import { formatShortCodeName } from '../../utils/display'
 import { OrgChartNode, organizationApi } from '../../api/organization'
 
 const { Text } = Typography
 
-const DISPLAY_DEPTH = 2
+const DEFAULT_DEPTH = 2
 
 function countDescendants(node: OrgChartNode): number {
   return node.children.reduce((sum, child) => sum + 1 + countDescendants(child), 0)
@@ -47,99 +51,143 @@ function NodeBox({
 }) {
   const { token } = theme.useToken()
   const gradeColor = getGradeColor(node.jobGrade, token)
+  const borderColor = isRoot ? token.colorPrimary : gradeColor
   const subCount = countDescendants(node)
   const hasChildren = node.children.length > 0
 
   return (
     <div
       style={{
+        position: 'relative',
         display: 'inline-block',
-        background: token.colorBgContainer,
-        border: `${token.lineWidthBold}px ${token.lineType} ${isRoot ? token.colorPrimary : gradeColor}`,
-        borderRadius: token.borderRadiusLG,
-        padding: `${token.paddingXS}px ${token.paddingSM}px`,
-        minWidth: token.controlHeightLG * 4,
-        maxWidth: token.controlHeightLG * 5,
-        textAlign: 'left',
-        boxShadow: isRoot ? token.boxShadowSecondary : token.boxShadowTertiary,
+        marginTop: 32, // Space for the half-avatar sticking out
         cursor: hasChildren ? 'pointer' : 'default',
-        transition: `box-shadow ${token.motionDurationMid}`,
         userSelect: 'none',
       }}
       onClick={() => hasChildren && onDrillDown(node)}
       title={hasChildren ? 'Click to view subordinates' : undefined}
     >
-      <div style={{ marginBottom: token.marginXXS }}>
-        <Tag
-          color={gradeColor}
-          style={{ margin: 0, fontSize: token.fontSizeSM, paddingInline: token.paddingXXS, lineHeight: `${token.controlHeightSM}px` }}
-        >
-          {node.jobGrade}
-        </Tag>
-        {node.secretaryCode && (
-          <Tooltip title={`Secretary: ${node.secretaryCode}`}>
-            <Tag color="purple" style={{ margin: `0 0 0 ${token.marginXXS}px`, fontSize: token.fontSizeSM, paddingInline: token.paddingXXS, lineHeight: `${token.controlHeightSM}px` }}>
-              Secretary
-            </Tag>
-          </Tooltip>
-        )}
-      </div>
-
+      {/* Avatar placed at the top center */}
       <div
         style={{
-          fontSize: token.fontSizeSM,
-          fontWeight: token.fontWeightStrong,
-          lineHeight: `${token.lineHeightSM * token.fontSizeSM}px`,
-          marginBottom: token.marginXXS / 2,
-          overflow: 'hidden',
-          display: '-webkit-box',
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: 'vertical',
+          position: 'absolute',
+          top: 0,
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          zIndex: 2,
         }}
-        title={node.positionName}
       >
-        {node.positionName}
-      </div>
-
-      <div style={{ fontSize: token.fontSizeSM, color: token.colorTextTertiary, marginBottom: token.marginXXS }}>
-        {node.positionCode}
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: token.marginXXS }}>
-        <UserOutlined
-          style={{ fontSize: token.fontSizeSM, color: node.isVacant ? token.colorError : token.colorSuccess }}
-        />
-        <span
+        <Avatar
+          size={64}
+          icon={<UserOutlined />}
           style={{
-            fontSize: token.fontSizeSM,
+            border: `4px solid ${borderColor}`,
+            backgroundColor: token.colorBgContainer,
+            color: node.isVacant ? token.colorError : token.colorTextSecondary,
+          }}
+        />
+      </div>
+
+      {/* Main Card */}
+      <div
+        style={{
+          background: token.colorBgContainer,
+          borderTop: `4px solid ${borderColor}`,
+          borderRadius: token.borderRadiusLG,
+          padding: `${token.paddingLG + token.paddingSM}px ${token.paddingSM}px ${token.paddingSM}px`,
+          minWidth: 200,
+          maxWidth: 240,
+          boxShadow: isRoot ? token.boxShadowSecondary : token.boxShadowTertiary,
+          transition: `all ${token.motionDurationMid}`,
+          textAlign: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: token.marginXXS,
+        }}
+        onMouseEnter={(e) => {
+          if (hasChildren) {
+            e.currentTarget.style.transform = 'translateY(-2px)'
+            e.currentTarget.style.boxShadow = token.boxShadow
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (hasChildren) {
+            e.currentTarget.style.transform = 'none'
+            e.currentTarget.style.boxShadow = isRoot ? token.boxShadowSecondary : token.boxShadowTertiary
+          }
+        }}
+      >
+        {/* Name (Occupant) */}
+        <div
+          style={{
+            fontSize: token.fontSize,
+            fontWeight: token.fontWeightStrong,
             color: node.isVacant ? token.colorError : token.colorText,
+            lineHeight: token.lineHeight,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
-            maxWidth: token.controlHeightLG * 3.5,
+            width: '100%',
           }}
           title={node.occupantName ?? 'Vacant'}
         >
           {node.occupantName ?? 'Vacant'}
-        </span>
-      </div>
+        </div>
 
-      {subCount > 0 && (
+        {/* Position Name (Role) */}
         <div
           style={{
-            marginTop: token.marginXS,
             fontSize: token.fontSizeSM,
-            color: token.colorPrimary,
-            display: 'flex',
-            alignItems: 'center',
-            gap: token.marginXXS,
+            color: token.colorTextSecondary,
+            lineHeight: token.lineHeightSM,
+            overflow: 'hidden',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            width: '100%',
           }}
+          title={node.positionName}
         >
-          <TeamOutlined />
-          {subCount} people
-          {hasChildren && <DownOutlined style={{ fontSize: token.fontSizeSM }} />}
+          {node.positionName}
         </div>
-      )}
+
+        {/* Badges / Job Grade */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: token.marginXXS, marginTop: token.marginXXS }}>
+          <Tag
+            color={gradeColor}
+            style={{ margin: 0, fontSize: token.fontSizeSM, paddingInline: token.paddingXXS, lineHeight: `${token.controlHeightSM}px` }}
+          >
+            {node.jobGrade}
+          </Tag>
+          {node.secretaryCode && (
+            <Tooltip title={`Secretary: ${node.secretaryCode}`}>
+              <Tag color="purple" style={{ margin: 0, fontSize: token.fontSizeSM, paddingInline: token.paddingXXS, lineHeight: `${token.controlHeightSM}px` }}>
+                Sec
+              </Tag>
+            </Tooltip>
+          )}
+        </div>
+
+        {/* Subordinates Count */}
+        {subCount > 0 && (
+          <div
+            style={{
+              marginTop: token.marginXS,
+              fontSize: token.fontSizeSM,
+              color: token.colorPrimary,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: token.marginXXS,
+            }}
+          >
+            <TeamOutlined />
+            {subCount} people
+            {hasChildren && <DownOutlined style={{ fontSize: token.fontSizeSM }} />}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -173,11 +221,30 @@ export default function OrgChart() {
   const { token } = theme.useToken()
   const [path, setPath] = useState<OrgChartNode[]>([])
   const [search, setSearch] = useState('')
+  const [branchCode, setBranchCode] = useState('HO')
+  const [deptCode, setDeptCode] = useState<string | undefined>()
+  const [sectionCode, setSectionCode] = useState<string | undefined>()
+  const [depth, setDepth] = useState(DEFAULT_DEPTH)
 
   const { data, isLoading } = useQuery({
-    queryKey: ['org-chart'],
-    queryFn: () => organizationApi.orgChart(),
+    queryKey: ['org-chart', branchCode, deptCode, sectionCode],
+    queryFn: () => organizationApi.orgChart(undefined, branchCode, deptCode, sectionCode),
     staleTime: 5 * 60 * 1000,
+  })
+
+  const branchOptions = useQuery({
+    queryKey: ['branch-options'],
+    queryFn: () => settingsApi.branchOptions.list(),
+  })
+
+  const departments = useQuery({
+    queryKey: ['department-options'],
+    queryFn: () => settingsApi.departments.list({ isActive: true }),
+  })
+
+  const sections = useQuery({
+    queryKey: ['section-options', deptCode],
+    queryFn: () => settingsApi.sections.list({ deptCode, isActive: true }),
   })
 
   const topNodes = data?.data ?? []
@@ -219,62 +286,136 @@ export default function OrgChart() {
   return (
     <div>
       <Card size="small" style={{ marginBottom: token.marginMD }}>
-        <div style={{ position: 'relative', display: 'inline-block' }}>
-          <Input
-            prefix={<SearchOutlined />}
-            placeholder="Search position, name, or employee"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            allowClear
-            style={{ width: token.controlHeightLG * 8.5 }}
-          />
-          {searchResults.length > 0 && (
-            <div
-              style={{
-                position: 'absolute',
-                top: '100%',
-                left: 0,
-                zIndex: token.zIndexPopupBase,
-                background: token.colorBgContainer,
-                border: `${token.lineWidth}px ${token.lineType} ${token.colorBorder}`,
-                borderRadius: token.borderRadius,
-                boxShadow: token.boxShadowSecondary,
-                marginTop: token.marginXXS,
-                width: token.controlHeightLG * 8.5,
-                maxHeight: token.controlHeightLG * 7.5,
-                overflowY: 'auto',
-              }}
-            >
-              {searchResults.map((node) => (
-                <div
-                  key={node.positionId}
-                  onClick={() => jumpTo(node)}
-                  style={{
-                    padding: `${token.paddingXXS}px ${token.paddingSM}px`,
-                    cursor: 'pointer',
-                    borderBottom: `${token.lineWidth}px ${token.lineType} ${token.colorSplit}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: token.marginXS,
-                  }}
-                >
-                  <Tag
-                    color={getGradeColor(node.jobGrade, token)}
-                    style={{ margin: 0, fontSize: token.fontSizeSM, paddingInline: token.paddingXXS, lineHeight: `${token.controlHeightSM}px`, flexShrink: 0 }}
+        <Space wrap>
+          <div style={{ position: 'relative', display: 'inline-block' }}>
+            <Input
+              prefix={<SearchOutlined />}
+              placeholder="Search position, name, or employee"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              allowClear
+              style={{ width: token.controlHeightLG * 8.5 }}
+            />
+            {searchResults.length > 0 && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  zIndex: token.zIndexPopupBase,
+                  background: token.colorBgContainer,
+                  border: `${token.lineWidth}px ${token.lineType} ${token.colorBorder}`,
+                  borderRadius: token.borderRadius,
+                  boxShadow: token.boxShadowSecondary,
+                  marginTop: token.marginXXS,
+                  width: token.controlHeightLG * 8.5,
+                  maxHeight: token.controlHeightLG * 7.5,
+                  overflowY: 'auto',
+                }}
+              >
+                {searchResults.map((node) => (
+                  <div
+                    key={node.positionId}
+                    onClick={() => jumpTo(node)}
+                    style={{
+                      padding: `${token.paddingXXS}px ${token.paddingSM}px`,
+                      cursor: 'pointer',
+                      borderBottom: `${token.lineWidth}px ${token.lineType} ${token.colorSplit}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: token.marginXS,
+                    }}
                   >
-                    {node.jobGrade}
-                  </Tag>
-                  <Text style={{ fontSize: token.fontSizeSM, flex: 1 }} ellipsis>
-                    {node.positionName}
-                  </Text>
-                  <Text type="secondary" style={{ fontSize: token.fontSizeSM, flexShrink: 0 }}>
-                    {node.occupantName ?? 'Vacant'}
-                  </Text>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+                    <Tag
+                      color={getGradeColor(node.jobGrade, token)}
+                      style={{ margin: 0, fontSize: token.fontSizeSM, paddingInline: token.paddingXXS, lineHeight: `${token.controlHeightSM}px`, flexShrink: 0 }}
+                    >
+                      {node.jobGrade}
+                    </Tag>
+                    <Text style={{ fontSize: token.fontSizeSM, flex: 1 }} ellipsis>
+                      {node.positionName}
+                    </Text>
+                    <Text type="secondary" style={{ fontSize: token.fontSizeSM, flexShrink: 0 }}>
+                      {node.occupantName ?? 'Vacant'}
+                    </Text>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <Select
+            showSearch
+            loading={branchOptions.isLoading}
+            optionFilterProp="label"
+            style={{ width: token.controlHeightLG * 6 }}
+            value={branchCode}
+            onChange={(value) => {
+              setBranchCode(value)
+              setDeptCode(undefined)
+              setPath([])
+            }}
+            options={[
+              { value: 'HO', label: 'HO' },
+              ...(branchOptions.data?.data ?? []).map((branch) => ({
+                value: branch.branchCode,
+                label: formatShortCodeName(branch.branchShortCode, branch.branchCode, branch.branchName),
+              })),
+            ]}
+          />
+
+          <Select
+            showSearch
+            allowClear
+            placeholder="Department"
+            loading={departments.isLoading}
+            style={{ width: token.controlHeightLG * 6 }}
+            value={deptCode}
+            optionFilterProp="label"
+            onChange={(value) => {
+              setDeptCode(value)
+              setSectionCode(undefined)
+              setPath([])
+            }}
+            options={(departments.data?.data ?? []).map((department) => ({
+              value: department.deptCode,
+              label: formatShortCodeName(department.deptShortCode, department.deptCode, department.deptName),
+            }))}
+          />
+
+          <Select
+            showSearch
+            allowClear
+            placeholder="Section"
+            loading={sections.isLoading}
+            style={{ width: token.controlHeightLG * 6 }}
+            value={sectionCode}
+            optionFilterProp="label"
+            onChange={(value) => {
+              setSectionCode(value)
+              setPath([])
+            }}
+            options={(sections.data?.data ?? []).map((section) => ({
+              value: section.sectCode,
+              label: formatShortCodeName(section.sectShortCode, section.sectCode, section.sectName),
+            }))}
+          />
+
+          <Space size={token.marginXXS}>
+            <Text type="secondary">Depth:</Text>
+            <Select
+              style={{ width: token.controlHeightLG * 2.5 }}
+              value={depth}
+              onChange={(value: number) => setDepth(value)}
+              options={[
+                { value: 2, label: '2 Levels' },
+                { value: 3, label: '3 Levels' },
+                { value: 4, label: '4 Levels' },
+                { value: 5, label: '5 Levels' },
+              ]}
+            />
+          </Space>
+        </Space>
       </Card>
 
       <Space style={{ marginBottom: token.marginMD }}>
@@ -339,13 +480,13 @@ export default function OrgChart() {
               )
             }
           >
-            {buildTreeNodes(displayNodes, DISPLAY_DEPTH - 1, drillDown)}
+            {buildTreeNodes(displayNodes, depth - 1, drillDown)}
           </Tree>
         </div>
       )}
 
       <Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
-        * Showing {DISPLAY_DEPTH} levels. Click a node to drill down.
+        * Showing {depth} levels. Click a node to drill down.
       </Text>
     </div>
   )

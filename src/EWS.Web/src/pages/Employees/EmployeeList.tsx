@@ -25,16 +25,18 @@ export default function EmployeeList() {
   const columnWidth = token.controlHeightLG
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<string>('Active')
+  const [branchCode, setBranchCode] = useState('HO')
   const [deptCode, setDeptCode] = useState<string | undefined>()
   const [sectionCode, setSectionCode] = useState<string | undefined>()
   const [pagination, setPagination] = useState({ page: 1, pageSize: 20 })
   const [selectedCode, setSelectedCode] = useState<string | null>(null)
 
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['employees', search, status, deptCode, sectionCode, pagination],
+    queryKey: ['employees', search, status, branchCode, deptCode, sectionCode, pagination],
     queryFn: () => settingsApi.employees.list({
       search: search || undefined,
       status: status || undefined,
+      branchCode,
       deptCode,
       sectionCode,
       ...pagination,
@@ -44,6 +46,11 @@ export default function EmployeeList() {
   const departments = useQuery({
     queryKey: ['department-options'],
     queryFn: () => settingsApi.departments.list({ isActive: true }),
+  })
+
+  const branchOptions = useQuery({
+    queryKey: ['branch-options'],
+    queryFn: () => settingsApi.branchOptions.list(),
   })
 
   const sections = useQuery({
@@ -61,7 +68,10 @@ export default function EmployeeList() {
       render: (_: unknown, record) => (
         <Space size={token.marginXS}>
           <Avatar size="small" icon={<UserOutlined />} />
-          <span>{record.employeeName}{record.nickname ? ` (${record.nickname})` : ''}</span>
+          <Space size={token.marginXXS}>
+            <span>{record.employeeName}{record.nickname ? ` (${record.nickname})` : ''}</span>
+            {record.isTest && <Tag color="orange" style={{ margin: 0 }}>Test</Tag>}
+          </Space>
         </Space>
       ),
     },
@@ -96,13 +106,6 @@ export default function EmployeeList() {
       key: 'startDate',
       width: columnWidth * 3,
       render: (value: string) => value.slice(0, 10),
-    },
-    {
-      title: 'Test',
-      dataIndex: 'isTest',
-      key: 'isTest',
-      width: columnWidth * 1.75,
-      render: (value: boolean) => value ? <Tag color="orange">Test</Tag> : null,
     },
   ]
 
@@ -147,6 +150,24 @@ export default function EmployeeList() {
               { value: '', label: 'All statuses' },
               { value: 'Active', label: 'Active' },
               { value: 'Resigned', label: 'Resigned' },
+            ]}
+          />
+          <Select
+            showSearch
+            loading={branchOptions.isLoading}
+            optionFilterProp="label"
+            style={{ width: token.controlHeightLG * 6 }}
+            value={branchCode}
+            onChange={(value) => {
+              setBranchCode(value)
+              setPagination((current) => ({ ...current, page: 1 }))
+            }}
+            options={[
+              { value: 'HO', label: 'HO' },
+              ...(branchOptions.data?.data ?? []).map((branch) => ({
+                value: branch.branchCode,
+                label: formatShortCodeName(branch.branchShortCode, branch.branchCode, branch.branchName),
+              })),
             ]}
           />
           <Select

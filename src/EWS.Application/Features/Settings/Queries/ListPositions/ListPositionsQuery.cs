@@ -3,7 +3,7 @@ using MediatR;
 
 namespace EWS.Application.Features.Settings.Queries.ListPositions;
 
-public record ListPositionsQuery(string? Search, bool? IsActive, string? DeptCode, string? SectionCode, int Page, int PageSize)
+public record ListPositionsQuery(string? Search, bool? IsActive, string? BranchCode, string? DeptCode, string? SectionCode, int Page, int PageSize)
     : IRequest<Result<PaginatedList<PositionDto>>>;
 
 public record PositionDto(

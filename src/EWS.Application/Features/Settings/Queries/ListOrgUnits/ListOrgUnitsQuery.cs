@@ -9,6 +9,9 @@ public record ListDepartmentsQuery(string? Search, bool? IsActive)
 public record ListSectionsQuery(string? Search, string? DeptCode, bool? IsActive)
     : IRequest<Result<List<SectionOptionDto>>>;
 
+public record ListBranchOptionsQuery()
+    : IRequest<Result<List<BranchOptionDto>>>;
+
 public record DepartmentOptionDto(
     int DepartmentId,
     string DeptCode,
@@ -28,3 +31,10 @@ public record SectionOptionDto(
     string DeptCode,
     string DeptName,
     bool IsActive);
+
+public record BranchOptionDto(
+    int SectionId,
+    string BranchCode,
+    string? BranchShortCode,
+    string BranchName,
+    int PositionCount);

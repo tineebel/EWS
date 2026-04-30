@@ -39,6 +39,28 @@ public class ListEmployeesHandler(IAppDbContext db)
             Enum.TryParse<EmployeeStatus>(req.Status, out var statusEnum))
             q = q.Where(e => e.Status == statusEnum);
 
+        if (!string.IsNullOrWhiteSpace(req.BranchCode))
+        {
+            var branchCode = req.BranchCode.Trim().ToUpper();
+
+            if (branchCode == "HO")
+            {
+                q = q.Where(e => e.PositionAssignments.Any(pa =>
+                    pa.StartDate <= now &&
+                    (pa.EndDate == null || pa.EndDate >= now) &&
+                    pa.Position.WfScopeType == WfScopeType.Ho));
+            }
+            else
+            {
+                q = q.Where(e => e.PositionAssignments.Any(pa =>
+                    pa.StartDate <= now &&
+                    (pa.EndDate == null || pa.EndDate >= now) &&
+                    pa.Position.WfScopeType == WfScopeType.Branch &&
+                    (pa.Position.Section.SectCode.ToUpper() == branchCode ||
+                     (pa.Position.Section.SectShortCode != null && pa.Position.Section.SectShortCode.ToUpper() == branchCode))));
+            }
+        }
+
         if (!string.IsNullOrWhiteSpace(req.DeptCode))
             q = q.Where(e => e.PositionAssignments.Any(pa =>
                 pa.StartDate <= now &&
