@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EWS.Application.Features.Settings.Queries.ListEmployees;
 
-public class ListEmployeesHandler(IAppDbContext db)
+public class ListEmployeesHandler(IAppDbContext db, IDateTimeService clock)
     : IRequestHandler<ListEmployeesQuery, Result<PaginatedList<EmployeeDto>>>
 {
     public async Task<Result<PaginatedList<EmployeeDto>>> Handle(ListEmployeesQuery req, CancellationToken ct)
@@ -18,26 +18,45 @@ public class ListEmployeesHandler(IAppDbContext db)
                         .ThenInclude(s => s.Department)
             .AsQueryable();
 
-        var now = DateTime.UtcNow.AddHours(7);
+        var now = clock.Now;
+        EmployeeStatus? statusFilter = null;
+        if (!string.IsNullOrWhiteSpace(req.Status) &&
+            Enum.TryParse<EmployeeStatus>(req.Status, out var parsedStatus))
+        {
+            statusFilter = parsedStatus;
+        }
 
         if (!string.IsNullOrWhiteSpace(req.Search))
-            q = q.Where(e =>
-                e.EmployeeCode.Contains(req.Search) ||
-                e.EmployeeName.Contains(req.Search) ||
-                (e.Email != null && e.Email.Contains(req.Search)) ||
-                e.PositionAssignments.Any(pa =>
-                    pa.Position.PositionCode.Contains(req.Search) ||
-                    pa.Position.PositionName.Contains(req.Search) ||
-                    pa.Position.Section.SectCode.Contains(req.Search) ||
-                    (pa.Position.Section.SectShortCode != null && pa.Position.Section.SectShortCode.Contains(req.Search)) ||
-                    pa.Position.Section.SectName.Contains(req.Search) ||
-                    pa.Position.Section.Department.DeptCode.Contains(req.Search) ||
-                    (pa.Position.Section.Department.DeptShortCode != null && pa.Position.Section.Department.DeptShortCode.Contains(req.Search)) ||
-                    pa.Position.Section.Department.DeptName.Contains(req.Search)));
+        {
+            var searchTerms = req.Search
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-        if (!string.IsNullOrWhiteSpace(req.Status) &&
-            Enum.TryParse<EmployeeStatus>(req.Status, out var statusEnum))
-            q = q.Where(e => e.Status == statusEnum);
+            foreach (var term in searchTerms)
+            {
+                q = q.Where(e =>
+                    e.EmployeeCode.Contains(term) ||
+                    e.EmployeeName.Contains(term) ||
+                    (e.Email != null && e.Email.Contains(term)) ||
+                    e.PositionAssignments.Any(pa =>
+                        (!statusFilter.HasValue ||
+                         (!pa.IsVacant &&
+                          pa.StartDate <= now &&
+                          (pa.EndDate == null || pa.EndDate >= now))) &&
+                        (pa.Position.PositionCode.Contains(term) ||
+                         pa.Position.PositionName.Contains(term) ||
+                         pa.Position.Section.SectCode.Contains(term) ||
+                         (pa.Position.Section.SectShortCode != null && pa.Position.Section.SectShortCode.Contains(term)) ||
+                         pa.Position.Section.SectName.Contains(term) ||
+                         pa.Position.Section.Department.DeptCode.Contains(term) ||
+                         (pa.Position.Section.Department.DeptShortCode != null && pa.Position.Section.Department.DeptShortCode.Contains(term)) ||
+                         pa.Position.Section.Department.DeptName.Contains(term))));
+            }
+        }
+
+        if (statusFilter == EmployeeStatus.Active)
+            q = q.Where(e => e.EndDate == null || e.EndDate >= now);
+        else if (statusFilter == EmployeeStatus.Resigned)
+            q = q.Where(e => e.EndDate != null && e.EndDate < now);
 
         if (!string.IsNullOrWhiteSpace(req.BranchCode))
         {
@@ -46,6 +65,7 @@ public class ListEmployeesHandler(IAppDbContext db)
             if (branchCode == "HO")
             {
                 q = q.Where(e => e.PositionAssignments.Any(pa =>
+                    !pa.IsVacant &&
                     pa.StartDate <= now &&
                     (pa.EndDate == null || pa.EndDate >= now) &&
                     pa.Position.WfScopeType == WfScopeType.Ho));
@@ -53,6 +73,7 @@ public class ListEmployeesHandler(IAppDbContext db)
             else
             {
                 q = q.Where(e => e.PositionAssignments.Any(pa =>
+                    !pa.IsVacant &&
                     pa.StartDate <= now &&
                     (pa.EndDate == null || pa.EndDate >= now) &&
                     pa.Position.WfScopeType == WfScopeType.Branch &&
@@ -63,12 +84,14 @@ public class ListEmployeesHandler(IAppDbContext db)
 
         if (!string.IsNullOrWhiteSpace(req.DeptCode))
             q = q.Where(e => e.PositionAssignments.Any(pa =>
+                !pa.IsVacant &&
                 pa.StartDate <= now &&
                 (pa.EndDate == null || pa.EndDate >= now) &&
                 pa.Position.Section.Department.DeptCode == req.DeptCode));
 
         if (!string.IsNullOrWhiteSpace(req.SectionCode))
             q = q.Where(e => e.PositionAssignments.Any(pa =>
+                !pa.IsVacant &&
                 pa.StartDate <= now &&
                 (pa.EndDate == null || pa.EndDate >= now) &&
                 pa.Position.Section.SectCode == req.SectionCode));
@@ -88,12 +111,17 @@ public class ListEmployeesHandler(IAppDbContext db)
                 e.Nickname,
                 e.Email,
                 e.Tel,
-                e.Status.ToString(),
+                e.EndDate == null || e.EndDate >= now
+                    ? EmployeeStatus.Active.ToString()
+                    : EmployeeStatus.Resigned.ToString(),
                 e.StartDate,
                 e.EndDate,
                 e.IsTest,
                 e.PositionAssignments
-                    .Where(pa => pa.StartDate <= now && (pa.EndDate == null || pa.EndDate >= now))
+                    .Where(pa => !statusFilter.HasValue ||
+                        (!pa.IsVacant &&
+                         pa.StartDate <= now &&
+                         (pa.EndDate == null || pa.EndDate >= now)))
                     .Select(pa => pa.Position.PositionCode)
                     .ToList()))
             .ToList();

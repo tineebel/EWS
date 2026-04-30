@@ -183,6 +183,20 @@ export interface Delegation {
   startDate: string
   endDate: string
   reason?: string
+  isActive: boolean
   isCurrentlyActive: boolean
   createdAt: string
+}
+
+export interface DelegationDetail extends Delegation {
+  updatedAt?: string
+}
+
+export interface UpsertDelegationRequest {
+  fromPositionCode: string
+  toPositionCode: string
+  startDate: string
+  endDate: string
+  reason?: string
+  isActive: boolean
 }

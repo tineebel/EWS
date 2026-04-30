@@ -31,8 +31,9 @@ public class SubmitWorkflowHandler(
         // 2. Validate submitter has active assignment
         var hasAssignment = await db.PositionAssignments
             .AnyAsync(a => a.PositionId == submitterPos.PositionId
-                && a.IsActive && !a.IsVacant
+                && !a.IsVacant
                 && a.StartDate <= now && (a.EndDate == null || a.EndDate >= now)
+                && (a.Employee.EndDate == null || a.Employee.EndDate >= now)
                 && a.EmployeeId == request.SubmitterEmployeeId, ct);
 
         if (!hasAssignment)
@@ -152,7 +153,10 @@ public class SubmitWorkflowHandler(
             approvalStepDtos.Add(new SubmitApprovalStepDto(
                 step.StepOrder, step.StepName,
                 resolved.PositionCode, resolved.PositionName,
-                resolved.OccupantName, resolved.WasEscalated,
+                resolved.OccupantName,
+                resolved.OccupantNames.ToList(),
+                resolved.OccupantCount,
+                resolved.WasEscalated,
                 resolved.DelegatedToPositionCode));
         }
 

@@ -10,6 +10,8 @@ public record ResolvedApprover(
     bool WasEscalated,
     int EscalationDepth,
     string? OccupantName,
+    IReadOnlyList<string> OccupantNames,
+    int OccupantCount,
     bool IsVacant,
     int? DelegatedToPositionId,
     string? DelegatedToPositionCode,

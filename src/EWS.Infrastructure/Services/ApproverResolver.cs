@@ -130,15 +130,16 @@ public class ApproverResolver(AppDbContext db, IDateTimeService clock) : IApprov
             if (pos == null) return null;
 
             // ตรวจสอบว่ามีพนักงาน Active ดำรงตำแหน่งนี้อยู่หรือไม่
-            var occupant = await db.PositionAssignments
+            var occupantNames = await db.PositionAssignments
                 .Where(a => a.PositionId == current
-                    && a.IsActive
                     && !a.IsVacant
                     && a.StartDate <= now
-                    && (a.EndDate == null || a.EndDate >= now))
-                .Join(db.Employees, a => a.EmployeeId, e => e.EmployeeId,
-                    (a, e) => new { e.EmployeeName, e.EmployeeId })
-                .FirstOrDefaultAsync(ct);
+                    && (a.EndDate == null || a.EndDate >= now)
+                    && (a.Employee.EndDate == null || a.Employee.EndDate >= now))
+                .Join(db.Employees.Where(e => !e.IsTest), a => a.EmployeeId, e => e.EmployeeId,
+                    (a, e) => e.EmployeeName)
+                .OrderBy(name => name)
+                .ToListAsync(ct);
 
             // ตรวจสอบ Delegation Active
             var delegation = await db.Delegations
@@ -149,17 +150,23 @@ public class ApproverResolver(AppDbContext db, IDateTimeService clock) : IApprov
                 .Select(d => new { d.ToPositionId, ToCode = d.ToPosition.PositionCode })
                 .FirstOrDefaultAsync(ct);
 
-            bool isVacant = occupant == null;
+            bool isVacant = occupantNames.Count == 0;
 
             if (!isVacant)
             {
+                var occupantName = occupantNames.Count == 1
+                    ? occupantNames[0]
+                    : $"{occupantNames.Count} occupants";
+
                 return new ResolvedApprover(
                     PositionId: pos.PositionId,
                     PositionCode: pos.PositionCode,
                     PositionName: pos.PositionName,
                     WasEscalated: escalationDepth > 0,
                     EscalationDepth: escalationDepth,
-                    OccupantName: occupant!.EmployeeName,
+                    OccupantName: occupantName,
+                    OccupantNames: occupantNames,
+                    OccupantCount: occupantNames.Count,
                     IsVacant: false,
                     DelegatedToPositionId: delegation?.ToPositionId,
                     DelegatedToPositionCode: delegation?.ToCode,

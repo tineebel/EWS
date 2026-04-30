@@ -1,5 +1,6 @@
 using EWS.Application.Common.Interfaces;
 using EWS.Application.Common.Models;
+using EWS.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,7 +22,11 @@ public class GetOrgChartHandler(IAppDbContext db, IDateTimeService clock)
         if (!string.IsNullOrEmpty(request.BranchCode))
         {
             var branch = request.BranchCode.Trim().ToUpper();
-            if (branch != "HO")
+            if (branch == "HO")
+            {
+                positionsQuery = positionsQuery.Where(p => p.WfScopeType == WfScopeType.Ho);
+            }
+            else
             {
                 positionsQuery = positionsQuery.Where(p =>
                     p.Section.SectCode.ToUpper() == branch ||
@@ -41,6 +46,33 @@ public class GetOrgChartHandler(IAppDbContext db, IDateTimeService clock)
                 p.Section.SectCode == request.SectionCode);
         }
 
+        if (!string.IsNullOrWhiteSpace(request.Search))
+        {
+            var searchTerms = request.Search
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+            foreach (var term in searchTerms)
+            {
+                positionsQuery = positionsQuery.Where(p =>
+                    p.PositionCode.Contains(term) ||
+                    p.PositionName.Contains(term) ||
+                    (p.PositionShortName != null && p.PositionShortName.Contains(term)) ||
+                    p.Section.SectCode.Contains(term) ||
+                    (p.Section.SectShortCode != null && p.Section.SectShortCode.Contains(term)) ||
+                    p.Section.SectName.Contains(term) ||
+                    p.Section.Department.DeptCode.Contains(term) ||
+                    (p.Section.Department.DeptShortCode != null && p.Section.Department.DeptShortCode.Contains(term)) ||
+                    p.Section.Department.DeptName.Contains(term) ||
+                    p.Assignments.Any(a =>
+                        !a.IsVacant &&
+                        a.StartDate <= now &&
+                        (a.EndDate == null || a.EndDate >= now) &&
+                        (a.Employee.EndDate == null || a.Employee.EndDate >= now) &&
+                        !a.Employee.IsTest &&
+                        a.Employee.EmployeeName.Contains(term)));
+            }
+        }
+
         var positions = await positionsQuery
             .Select(p => new
             {
@@ -57,16 +89,19 @@ public class GetOrgChartHandler(IAppDbContext db, IDateTimeService clock)
             .ToListAsync(ct);
 
         var occupants = await db.PositionAssignments
-            .Where(a => a.IsActive && !a.IsVacant
+            .Where(a => !a.IsVacant
                 && a.StartDate <= now
-                && (a.EndDate == null || a.EndDate >= now))
+                && (a.EndDate == null || a.EndDate >= now)
+                && (a.Employee.EndDate == null || a.Employee.EndDate >= now))
             .Join(db.Employees.Where(e => !e.IsTest), a => a.EmployeeId, e => e.EmployeeId,
                 (a, e) => new { a.PositionId, e.EmployeeName })
             .ToListAsync(ct);
 
         var occupantMap = occupants
             .GroupBy(x => x.PositionId)
-            .ToDictionary(g => g.Key, g => g.First().EmployeeName);
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(x => x.EmployeeName).OrderBy(name => name).ToList());
 
         var posCodeMap = positions.ToDictionary(p => p.PositionId, p => p.PositionCode);
 
@@ -86,14 +121,24 @@ public class GetOrgChartHandler(IAppDbContext db, IDateTimeService clock)
                 ? ch.Select(c => BuildNode(c.PositionId)).ToList()
                 : new List<OrgChartNodeDto>();
 
+            var occupantNames = occupantMap.GetValueOrDefault(p.PositionId) ?? [];
+            var occupantName = occupantNames.Count switch
+            {
+                0 => null,
+                1 => occupantNames[0],
+                _ => $"{occupantNames.Count} occupants"
+            };
+
             return new OrgChartNodeDto(
                 p.PositionId,
                 p.PositionCode,
                 p.PositionName,
                 p.JobGrade.ToString(),
                 p.IsChiefLevel,
-                !occupantMap.ContainsKey(p.PositionId),
-                occupantMap.GetValueOrDefault(p.PositionId),
+                occupantNames.Count == 0,
+                occupantName,
+                occupantNames,
+                occupantNames.Count,
                 secretaryCode,
                 children
             );

@@ -3,7 +3,12 @@ using MediatR;
 
 namespace EWS.Application.Features.Organization.Queries.GetOrgChart;
 
-public record GetOrgChartQuery(string? RootCode, string? BranchCode = null, string? DeptCode = null, string? SectionCode = null) : IRequest<Result<List<OrgChartNodeDto>>>;
+public record GetOrgChartQuery(
+    string? RootCode,
+    string? BranchCode = null,
+    string? DeptCode = null,
+    string? SectionCode = null,
+    string? Search = null) : IRequest<Result<List<OrgChartNodeDto>>>;
 
 public record OrgChartNodeDto(
     int PositionId,
@@ -13,6 +18,8 @@ public record OrgChartNodeDto(
     bool IsChiefLevel,
     bool IsVacant,
     string? OccupantName,
+    List<string> OccupantNames,
+    int OccupantCount,
     string? SecretaryCode,
     List<OrgChartNodeDto> Children
 );

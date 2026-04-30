@@ -40,7 +40,10 @@ public class GetApprovalChainHandler(IAppDbContext db, IWorkflowEngine engine)
                 step.ApproverType.ToString(), step.SpecificPositionCode,
                 r?.PositionCode ?? "-", r?.PositionName ?? "-",
                 r?.WasEscalated ?? false, r?.EscalationDepth ?? 0,
-                r?.OccupantName, r?.IsVacant ?? true,
+                r?.OccupantName,
+                r?.OccupantNames.ToList() ?? [],
+                r?.OccupantCount ?? 0,
+                r?.IsVacant ?? true,
                 r?.DelegatedToPositionCode,
                 r == null ? "WF_APPROVER_NOT_RESOLVED" : null,
                 r == null ? "Could not resolve approver for this step." : null

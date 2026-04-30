@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EWS.Application.Features.Settings.Queries.GetPositionDetail;
 
-public class GetPositionDetailHandler(IAppDbContext db)
+public class GetPositionDetailHandler(IAppDbContext db, IDateTimeService clock)
     : IRequestHandler<GetPositionDetailQuery, Result<PositionDetailDto>>
 {
     public async Task<Result<PositionDetailDto>> Handle(GetPositionDetailQuery req, CancellationToken ct)
@@ -22,7 +22,7 @@ public class GetPositionDetailHandler(IAppDbContext db)
         if (position is null)
             return Result<PositionDetailDto>.Fail("POSITION_NOT_FOUND", $"Position '{req.PositionCode}' not found.");
 
-        var now = DateTime.UtcNow.AddHours(7);
+        var now = clock.Now;
 
         var occupants = position.Assignments
             .OrderByDescending(pa => pa.StartDate)
@@ -34,7 +34,11 @@ public class GetPositionDetailHandler(IAppDbContext db)
                 pa.Employee.Email,
                 pa.StartDate,
                 pa.EndDate,
-                pa.IsActive && pa.StartDate <= now && (pa.EndDate == null || pa.EndDate >= now)))
+                !pa.IsVacant &&
+                !pa.Employee.IsTest &&
+                pa.StartDate <= now &&
+                (pa.EndDate == null || pa.EndDate >= now) &&
+                (pa.Employee.EndDate == null || pa.Employee.EndDate >= now)))
             .ToList();
 
         var dto = new PositionDetailDto(

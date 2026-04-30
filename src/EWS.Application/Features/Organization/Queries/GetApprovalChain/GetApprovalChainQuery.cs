@@ -34,6 +34,8 @@ public record ApprovalChainStepDto(
     bool WasEscalated,
     int EscalationDepth,
     string? OccupantName,
+    List<string> OccupantNames,
+    int OccupantCount,
     bool IsVacant,
     string? DelegatedToPositionCode,
     string? ErrorCode,

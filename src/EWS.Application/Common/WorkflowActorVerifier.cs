@@ -15,9 +15,9 @@ public static class WorkflowActorVerifier
         return db.PositionAssignments.AnyAsync(a =>
             a.PositionId == positionId &&
             a.EmployeeId == employeeId &&
-            a.IsActive &&
             !a.IsVacant &&
             a.StartDate <= now &&
+            (a.Employee.EndDate == null || a.Employee.EndDate >= now) &&
             (a.EndDate == null || a.EndDate >= now), ct);
     }
 }

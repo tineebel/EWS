@@ -19,16 +19,24 @@ public class ListPositionsHandler(IAppDbContext db)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(req.Search))
-            q = q.Where(p =>
-                p.PositionCode.Contains(req.Search) ||
-                p.PositionName.Contains(req.Search) ||
-                (p.PositionShortName != null && p.PositionShortName.Contains(req.Search)) ||
-                p.Section.SectCode.Contains(req.Search) ||
-                (p.Section.SectShortCode != null && p.Section.SectShortCode.Contains(req.Search)) ||
-                p.Section.SectName.Contains(req.Search) ||
-                p.Section.Department.DeptCode.Contains(req.Search) ||
-                (p.Section.Department.DeptShortCode != null && p.Section.Department.DeptShortCode.Contains(req.Search)) ||
-                p.Section.Department.DeptName.Contains(req.Search));
+        {
+            var searchTerms = req.Search
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+            foreach (var term in searchTerms)
+            {
+                q = q.Where(p =>
+                    p.PositionCode.Contains(term) ||
+                    p.PositionName.Contains(term) ||
+                    (p.PositionShortName != null && p.PositionShortName.Contains(term)) ||
+                    p.Section.SectCode.Contains(term) ||
+                    (p.Section.SectShortCode != null && p.Section.SectShortCode.Contains(term)) ||
+                    p.Section.SectName.Contains(term) ||
+                    p.Section.Department.DeptCode.Contains(term) ||
+                    (p.Section.Department.DeptShortCode != null && p.Section.Department.DeptShortCode.Contains(term)) ||
+                    p.Section.Department.DeptName.Contains(term));
+            }
+        }
 
         if (req.IsActive.HasValue)
             q = q.Where(p => p.IsActive == req.IsActive.Value);

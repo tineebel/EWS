@@ -5,12 +5,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EWS.Application.Features.Settings.Queries.ListDelegations;
 
-public class ListDelegationsHandler(IAppDbContext db)
+public class ListDelegationsHandler(IAppDbContext db, IDateTimeService clock)
     : IRequestHandler<ListDelegationsQuery, Result<List<DelegationDto>>>
 {
     public async Task<Result<List<DelegationDto>>> Handle(ListDelegationsQuery req, CancellationToken ct)
     {
-        var now = DateTime.UtcNow.AddHours(7);
+        var now = clock.Now;
 
         var q = db.Delegations
             .Include(d => d.FromPosition)
@@ -23,7 +23,7 @@ public class ListDelegationsHandler(IAppDbContext db)
                 d.ToPosition.PositionCode == req.PositionCode);
 
         if (req.ActiveOnly == true)
-            q = q.Where(d => d.StartDate <= now && d.EndDate >= now);
+            q = q.Where(d => d.IsActive && d.StartDate <= now && d.EndDate >= now);
 
         var result = await q.OrderByDescending(d => d.StartDate)
             .Select(d => new DelegationDto(
@@ -35,7 +35,8 @@ public class ListDelegationsHandler(IAppDbContext db)
                 d.StartDate,
                 d.EndDate,
                 d.Reason,
-                d.StartDate <= now && d.EndDate >= now,
+                d.IsActive,
+                d.IsActive && d.StartDate <= now && d.EndDate >= now,
                 d.CreatedAt.ToString("yyyy-MM-dd HH:mm")))
             .ToListAsync(ct);
 

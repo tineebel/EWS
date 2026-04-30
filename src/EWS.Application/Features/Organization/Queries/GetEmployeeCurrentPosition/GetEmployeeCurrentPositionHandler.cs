@@ -13,8 +13,9 @@ public class GetEmployeeCurrentPositionHandler(IAppDbContext db, IDateTimeServic
     {
         var now = clock.Now;
         var result = await db.PositionAssignments
-            .Where(a => a.IsActive && !a.IsVacant
+            .Where(a => !a.IsVacant
                 && a.StartDate <= now && (a.EndDate == null || a.EndDate >= now)
+                && (a.Employee.EndDate == null || a.Employee.EndDate >= now)
                 && a.Employee.EmployeeCode == request.EmployeeCode)
             .Select(a => new EmployeeCurrentPositionDto(
                 a.Employee.EmployeeCode,

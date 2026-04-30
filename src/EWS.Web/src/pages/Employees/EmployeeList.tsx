@@ -25,7 +25,7 @@ export default function EmployeeList() {
   const columnWidth = token.controlHeightLG
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<string>('Active')
-  const [branchCode, setBranchCode] = useState('HO')
+  const [branchCode, setBranchCode] = useState('')
   const [deptCode, setDeptCode] = useState<string | undefined>()
   const [sectionCode, setSectionCode] = useState<string | undefined>()
   const [pagination, setPagination] = useState({ page: 1, pageSize: 20 })
@@ -36,7 +36,7 @@ export default function EmployeeList() {
     queryFn: () => settingsApi.employees.list({
       search: search || undefined,
       status: status || undefined,
-      branchCode,
+      branchCode: branchCode || undefined,
       deptCode,
       sectionCode,
       ...pagination,
@@ -129,28 +129,17 @@ export default function EmployeeList() {
         </style>
         <Space style={{ marginBottom: token.marginMD }} wrap>
           <Input
-            placeholder="Search code, name, or email"
+            placeholder="Search employee or position"
             prefix={<SearchOutlined />}
             style={{ width: token.controlHeightLG * 8 }}
             value={search}
             onChange={(event) => {
-              setSearch(event.target.value)
+              const nextSearch = event.target.value
+              setSearch(nextSearch)
+              if (nextSearch.trim()) setStatus('')
               setPagination((current) => ({ ...current, page: 1 }))
             }}
             allowClear
-          />
-          <Select
-            style={{ width: token.controlHeightLG * 4 }}
-            value={status}
-            onChange={(value) => {
-              setStatus(value)
-              setPagination((current) => ({ ...current, page: 1 }))
-            }}
-            options={[
-              { value: '', label: 'All statuses' },
-              { value: 'Active', label: 'Active' },
-              { value: 'Resigned', label: 'Resigned' },
-            ]}
           />
           <Select
             showSearch
@@ -163,6 +152,7 @@ export default function EmployeeList() {
               setPagination((current) => ({ ...current, page: 1 }))
             }}
             options={[
+              { value: '', label: 'All' },
               { value: 'HO', label: 'HO' },
               ...(branchOptions.data?.data ?? []).map((branch) => ({
                 value: branch.branchCode,
@@ -204,6 +194,19 @@ export default function EmployeeList() {
               value: section.sectCode,
               label: formatShortCodeName(section.sectShortCode, section.sectCode, section.sectName),
             }))}
+          />
+          <Select
+            style={{ width: token.controlHeightLG * 4 }}
+            value={status}
+            onChange={(value) => {
+              setStatus(value)
+              setPagination((current) => ({ ...current, page: 1 }))
+            }}
+            options={[
+              { value: '', label: 'All statuses' },
+              { value: 'Active', label: 'Active' },
+              { value: 'Resigned', label: 'Resigned' },
+            ]}
           />
           <Tooltip title="Refresh">
             <Button icon={<ReloadOutlined />} onClick={() => refetch()} />

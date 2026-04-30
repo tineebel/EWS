@@ -110,8 +110,9 @@ public class RequestInfoHandler(IAppDbContext db, IDateTimeService clock)
 
         // ดึง ToPosition occupant name
         var toOccupant = await db.PositionAssignments
-            .Where(a => a.PositionId == toApproval.AssignedPositionId && a.IsActive && !a.IsVacant
-                     && a.StartDate <= now && (a.EndDate == null || a.EndDate >= now))
+            .Where(a => a.PositionId == toApproval.AssignedPositionId && !a.IsVacant
+                && a.StartDate <= now && (a.EndDate == null || a.EndDate >= now)
+                && (a.Employee.EndDate == null || a.Employee.EndDate >= now))
             .Select(a => a.Employee.EmployeeName)
             .FirstOrDefaultAsync(ct);
 

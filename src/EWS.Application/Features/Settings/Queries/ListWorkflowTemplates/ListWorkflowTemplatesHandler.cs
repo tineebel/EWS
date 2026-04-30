@@ -34,13 +34,17 @@ public class ListWorkflowTemplatesHandler(IAppDbContext db)
                 t.Condition1,
                 t.Condition2,
                 t.IsActive,
-                t.Steps.OrderBy(s => s.StepOrder).Select(s => new WorkflowStepDto(
+                t.Steps
+                    .Where(s => s.IsActive)
+                    .OrderBy(s => s.StepOrder)
+                    .Select(s => new WorkflowStepDto(
                     s.StepId,
                     s.StepOrder,
                     s.StepName,
                     s.ApproverType.ToString(),
                     s.SpecificPositionCode,
-                    s.IsRequired)).ToList()))
+                    s.IsRequired))
+                    .ToList()))
             .ToListAsync(ct);
 
         return Result<List<WorkflowTemplateDto>>.Success(result);

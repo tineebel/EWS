@@ -1,4 +1,8 @@
+using EWS.Application.Features.Settings.Commands.CreateDelegation;
+using EWS.Application.Features.Settings.Commands.DeleteDelegation;
+using EWS.Application.Features.Settings.Commands.UpdateDelegation;
 using EWS.Application.Features.Settings.Commands.UpdateWorkflowTemplate;
+using EWS.Application.Features.Settings.Queries.GetDelegationDetail;
 using EWS.Application.Features.Settings.Queries.GetEmployeeDetail;
 using EWS.Application.Features.Settings.Queries.GetPositionDetail;
 using EWS.Application.Features.Settings.Queries.GetTemplateHistory;
@@ -39,6 +43,16 @@ public class UpdateStepDtoRequest
     public string? SpecificPositionCode { get; set; }
     public int EscalationDays { get; set; }
     public bool IsRequired { get; set; }
+}
+
+public class UpsertDelegationRequest
+{
+    public string FromPositionCode { get; set; } = string.Empty;
+    public string ToPositionCode { get; set; } = string.Empty;
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
+    public string? Reason { get; set; }
+    public bool IsActive { get; set; } = true;
 }
 
 /// <summary>
@@ -198,6 +212,58 @@ public class SettingsController(IMediator mediator) : ApiControllerBase
         CancellationToken ct = default)
     {
         var result = await mediator.Send(new ListDelegationsQuery(positionCode, activeOnly), ct);
+        return FromResult(result);
+    }
+
+    [HttpGet("delegations/{delegationId:int}")]
+    public async Task<IActionResult> GetDelegationDetail(int delegationId, CancellationToken ct = default)
+    {
+        var result = await mediator.Send(new GetDelegationDetailQuery(delegationId), ct);
+        return FromResult(result);
+    }
+
+    [HttpPost("delegations")]
+    public async Task<IActionResult> CreateDelegation(
+        [FromBody] UpsertDelegationRequest body,
+        CancellationToken ct = default)
+    {
+        var result = await mediator.Send(new CreateDelegationCommand(
+            body.FromPositionCode,
+            body.ToPositionCode,
+            body.StartDate,
+            body.EndDate,
+            body.Reason,
+            body.IsActive,
+            ChangedBy: "Admin"), ct);
+
+        return result.IsSuccess
+            ? Created(result.Value)
+            : FromResult(result);
+    }
+
+    [HttpPut("delegations/{delegationId:int}")]
+    public async Task<IActionResult> UpdateDelegation(
+        int delegationId,
+        [FromBody] UpsertDelegationRequest body,
+        CancellationToken ct = default)
+    {
+        var result = await mediator.Send(new UpdateDelegationCommand(
+            delegationId,
+            body.FromPositionCode,
+            body.ToPositionCode,
+            body.StartDate,
+            body.EndDate,
+            body.Reason,
+            body.IsActive,
+            ChangedBy: "Admin"), ct);
+
+        return FromResult(result);
+    }
+
+    [HttpDelete("delegations/{delegationId:int}")]
+    public async Task<IActionResult> DeleteDelegation(int delegationId, CancellationToken ct = default)
+    {
+        var result = await mediator.Send(new DeleteDelegationCommand(delegationId, ChangedBy: "Admin"), ct);
         return FromResult(result);
     }
 }

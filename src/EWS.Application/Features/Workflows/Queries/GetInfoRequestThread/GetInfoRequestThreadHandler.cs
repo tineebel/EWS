@@ -43,8 +43,9 @@ public class GetInfoRequestThreadHandler(IAppDbContext db, IDateTimeService cloc
         // ดึง occupant names
         var positionIds = allRequests.Select(r => r.ToPositionId).Distinct().ToList();
         var occupants = await db.PositionAssignments
-            .Where(a => positionIds.Contains(a.PositionId) && a.IsActive && !a.IsVacant
-                     && a.StartDate <= now && (a.EndDate == null || a.EndDate >= now))
+            .Where(a => positionIds.Contains(a.PositionId) && !a.IsVacant
+                && a.StartDate <= now && (a.EndDate == null || a.EndDate >= now)
+                && (a.Employee.EndDate == null || a.Employee.EndDate >= now))
             .Select(a => new { a.PositionId, a.Employee.EmployeeName })
             .ToListAsync(ct);
         var occupantMap = occupants.ToDictionary(o => o.PositionId, o => o.EmployeeName);

@@ -39,6 +39,8 @@ public record SubmitApprovalStepDto(
     string ApproverPositionCode,
     string ApproverPositionName,
     string? OccupantName,
+    List<string> OccupantNames,
+    int OccupantCount,
     bool WasEscalated,
     string? DelegatedToPositionCode
 );

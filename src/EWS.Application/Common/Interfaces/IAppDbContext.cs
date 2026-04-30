@@ -1,5 +1,6 @@
 using EWS.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace EWS.Application.Common.Interfaces;
 
@@ -22,6 +23,7 @@ public interface IAppDbContext
     DbSet<WorkflowInfoRequest> WorkflowInfoRequests { get; }
     DbSet<WorkflowTemplateAuditLog> WorkflowTemplateAuditLogs { get; }
     DbSet<WorkflowDocumentSequence> WorkflowDocumentSequences { get; }
+    DatabaseFacade Database { get; }
 
     Task<int> SaveChangesAsync(CancellationToken ct = default);
 }

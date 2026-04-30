@@ -27,7 +27,7 @@ export default function PositionList() {
   const columnWidth = token.controlHeightLG
   const [search, setSearch] = useState('')
   const [isActive, setIsActive] = useState<boolean | undefined>(true)
-  const [branchCode, setBranchCode] = useState('HO')
+  const [branchCode, setBranchCode] = useState('')
   const [deptCode, setDeptCode] = useState<string | undefined>()
   const [sectionCode, setSectionCode] = useState<string | undefined>()
   const [pagination, setPagination] = useState({ page: 1, pageSize: 20 })
@@ -38,7 +38,7 @@ export default function PositionList() {
     queryFn: () => settingsApi.positions.list({
       search: search || undefined,
       isActive,
-      branchCode,
+      branchCode: branchCode || undefined,
       deptCode,
       sectionCode,
       ...pagination,
@@ -182,19 +182,6 @@ export default function PositionList() {
             allowClear
           />
           <Select
-            style={{ width: token.controlHeightLG * 4 }}
-            value={isActive === undefined ? 'all' : isActive ? 'active' : 'inactive'}
-            onChange={(value) => {
-              setIsActive(value === 'all' ? undefined : value === 'active')
-              setPagination((current) => ({ ...current, page: 1 }))
-            }}
-            options={[
-              { value: 'all', label: 'All' },
-              { value: 'active', label: 'Active' },
-              { value: 'inactive', label: 'Inactive' },
-            ]}
-          />
-          <Select
             showSearch
             loading={branchOptions.isLoading}
             optionFilterProp="label"
@@ -205,6 +192,7 @@ export default function PositionList() {
               setPagination((current) => ({ ...current, page: 1 }))
             }}
             options={[
+              { value: '', label: 'All' },
               { value: 'HO', label: 'HO' },
               ...(branchOptions.data?.data ?? []).map((branch) => ({
                 value: branch.branchCode,
@@ -246,6 +234,19 @@ export default function PositionList() {
               value: section.sectCode,
               label: formatShortCodeName(section.sectShortCode, section.sectCode, section.sectName),
             }))}
+          />
+          <Select
+            style={{ width: token.controlHeightLG * 4 }}
+            value={isActive === undefined ? 'all' : isActive ? 'active' : 'inactive'}
+            onChange={(value) => {
+              setIsActive(value === 'all' ? undefined : value === 'active')
+              setPagination((current) => ({ ...current, page: 1 }))
+            }}
+            options={[
+              { value: 'all', label: 'All' },
+              { value: 'active', label: 'Active' },
+              { value: 'inactive', label: 'Inactive' },
+            ]}
           />
           <Tooltip title="Refresh">
             <Button icon={<ReloadOutlined />} onClick={() => refetch()} />

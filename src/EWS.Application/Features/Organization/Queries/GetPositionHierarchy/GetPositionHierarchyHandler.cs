@@ -35,8 +35,9 @@ public class GetPositionHierarchyHandler(IAppDbContext db, IDateTimeService cloc
             if (p == null) break;
 
             var occupant = await db.PositionAssignments
-                .Where(a => a.PositionId == p.PositionId && a.IsActive && !a.IsVacant
-                    && a.StartDate <= now && (a.EndDate == null || a.EndDate >= now))
+                .Where(a => a.PositionId == p.PositionId && !a.IsVacant
+                    && a.StartDate <= now && (a.EndDate == null || a.EndDate >= now)
+                    && (a.Employee.EndDate == null || a.Employee.EndDate >= now))
                 .Join(db.Employees, a => a.EmployeeId, e => e.EmployeeId, (_, e) => e.EmployeeName)
                 .FirstOrDefaultAsync(ct);
 

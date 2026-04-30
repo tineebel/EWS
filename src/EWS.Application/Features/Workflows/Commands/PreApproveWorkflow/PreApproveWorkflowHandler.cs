@@ -39,10 +39,11 @@ public class PreApproveWorkflowHandler(IAppDbContext db, IDateTimeService clock)
 
         // ตรวจสอบว่า ChiefEmployeeId ครอง ChiefPosition จริง
         var hasAssignment = await db.PositionAssignments
-            .AnyAsync(a => a.PositionId == chiefPos.PositionId
-                && a.EmployeeId == request.ChiefEmployeeId
-                && a.IsActive && !a.IsVacant
-                && a.StartDate <= now && (a.EndDate == null || a.EndDate >= now), ct);
+                .AnyAsync(a => a.PositionId == chiefPos.PositionId
+                    && a.EmployeeId == request.ChiefEmployeeId
+                    && !a.IsVacant
+                    && a.StartDate <= now && (a.EndDate == null || a.EndDate >= now)
+                    && (a.Employee.EndDate == null || a.Employee.EndDate >= now), ct);
 
         if (!hasAssignment)
             return Result<bool>.Fail("WF_UNAUTHORIZED",

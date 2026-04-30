@@ -1,12 +1,12 @@
 using EWS.Application.Common.Models;
 using MediatR;
 
-namespace EWS.Application.Features.Settings.Queries.ListDelegations;
+namespace EWS.Application.Features.Settings.Queries.GetDelegationDetail;
 
-public record ListDelegationsQuery(string? PositionCode, bool? ActiveOnly)
-    : IRequest<Result<List<DelegationDto>>>;
+public record GetDelegationDetailQuery(int DelegationId)
+    : IRequest<Result<DelegationDetailDto>>;
 
-public record DelegationDto(
+public record DelegationDetailDto(
     int DelegationId,
     string FromPositionCode,
     string FromPositionName,
@@ -17,4 +17,5 @@ public record DelegationDto(
     string? Reason,
     bool IsActive,
     bool IsCurrentlyActive,
-    string CreatedAt);
+    string CreatedAt,
+    string? UpdatedAt);

@@ -1,5 +1,5 @@
 import { api, JsendList, JsendData } from './client'
-import type { Position, PositionDetail, Employee, EmployeeDetail, DocumentType, WorkflowTemplate, Delegation, TemplateAuditLog, UpdateTemplateRequest, DepartmentOption, SectionOption, BranchOption } from './types'
+import type { Position, PositionDetail, Employee, EmployeeDetail, DocumentType, WorkflowTemplate, Delegation, DelegationDetail, TemplateAuditLog, UpdateTemplateRequest, DepartmentOption, SectionOption, BranchOption, UpsertDelegationRequest } from './types'
 
 export const settingsApi = {
   positions: {
@@ -41,5 +41,13 @@ export const settingsApi = {
   delegations: {
     list: (params: { positionCode?: string; activeOnly?: boolean }) =>
       api.get<JsendData<Delegation[]>>('/settings/delegations', { params }).then(r => r.data),
+    get: (delegationId: number) =>
+      api.get<JsendData<DelegationDetail>>(`/settings/delegations/${delegationId}`).then(r => r.data),
+    create: (body: UpsertDelegationRequest) =>
+      api.post<JsendData<number>>('/settings/delegations', body).then(r => r.data),
+    update: (delegationId: number, body: UpsertDelegationRequest) =>
+      api.put<JsendData<number>>(`/settings/delegations/${delegationId}`, body).then(r => r.data),
+    remove: (delegationId: number) =>
+      api.delete<JsendData<Record<string, never>>>(`/settings/delegations/${delegationId}`).then(r => r.data),
   },
 }

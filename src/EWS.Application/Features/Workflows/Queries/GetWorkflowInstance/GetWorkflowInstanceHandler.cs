@@ -6,12 +6,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EWS.Application.Features.Workflows.Queries.GetWorkflowInstance;
 
-public class GetWorkflowInstanceHandler(IAppDbContext db)
+public class GetWorkflowInstanceHandler(IAppDbContext db, IDateTimeService clock)
     : IRequestHandler<GetWorkflowInstanceQuery, Result<WorkflowInstanceDetailDto>>
 {
     public async Task<Result<WorkflowInstanceDetailDto>> Handle(
         GetWorkflowInstanceQuery request, CancellationToken ct)
     {
+        var now = clock.Now;
+
         var instance = await db.WorkflowInstances
             .Where(x => x.InstanceId == request.InstanceId)
             .Select(x => new
@@ -38,7 +40,9 @@ public class GetWorkflowInstanceHandler(IAppDbContext db)
                 a.AssignedPosition.PositionCode,
                 a.AssignedPosition.PositionName,
                 db.PositionAssignments
-                    .Where(pa => pa.PositionId == a.AssignedPositionId && pa.IsActive && !pa.IsVacant)
+                    .Where(pa => pa.PositionId == a.AssignedPositionId && !pa.IsVacant)
+                    .Where(pa => pa.StartDate <= now && (pa.EndDate == null || pa.EndDate >= now))
+                    .Where(pa => pa.Employee.EndDate == null || pa.Employee.EndDate >= now)
                     .Select(pa => pa.Employee.EmployeeName)
                     .FirstOrDefault(),
                 a.Status.ToString(),

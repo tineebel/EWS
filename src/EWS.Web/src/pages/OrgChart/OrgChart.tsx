@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useDeferredValue, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Tree, TreeNode } from 'react-organizational-chart'
 import {
@@ -54,6 +54,8 @@ function NodeBox({
   const borderColor = isRoot ? token.colorPrimary : gradeColor
   const subCount = countDescendants(node)
   const hasChildren = node.children.length > 0
+  const occupantLabel = node.occupantCount > 1 ? `${node.occupantCount} occupants` : node.occupantName ?? 'Vacant'
+  const occupantTitle = node.occupantNames.length > 0 ? node.occupantNames.join(', ') : 'Vacant'
 
   return (
     <div
@@ -118,22 +120,22 @@ function NodeBox({
           }
         }}
       >
-        {/* Name (Occupant) */}
-        <div
-          style={{
-            fontSize: token.fontSize,
-            fontWeight: token.fontWeightStrong,
-            color: node.isVacant ? token.colorError : token.colorText,
-            lineHeight: token.lineHeight,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            width: '100%',
-          }}
-          title={node.occupantName ?? 'Vacant'}
-        >
-          {node.occupantName ?? 'Vacant'}
-        </div>
+        <Tooltip title={occupantTitle}>
+          <div
+            style={{
+              fontSize: token.fontSize,
+              fontWeight: token.fontWeightStrong,
+              color: node.isVacant ? token.colorError : token.colorText,
+              lineHeight: token.lineHeight,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              width: '100%',
+            }}
+          >
+            {occupantLabel}
+          </div>
+        </Tooltip>
 
         {/* Position Name (Role) */}
         <div
@@ -221,14 +223,21 @@ export default function OrgChart() {
   const { token } = theme.useToken()
   const [path, setPath] = useState<OrgChartNode[]>([])
   const [search, setSearch] = useState('')
-  const [branchCode, setBranchCode] = useState('HO')
+  const deferredSearch = useDeferredValue(search.trim())
+  const [branchCode, setBranchCode] = useState('')
   const [deptCode, setDeptCode] = useState<string | undefined>()
   const [sectionCode, setSectionCode] = useState<string | undefined>()
   const [depth, setDepth] = useState(DEFAULT_DEPTH)
 
   const { data, isLoading } = useQuery({
-    queryKey: ['org-chart', branchCode, deptCode, sectionCode],
-    queryFn: () => organizationApi.orgChart(undefined, branchCode, deptCode, sectionCode),
+    queryKey: ['org-chart', branchCode, deptCode, sectionCode, deferredSearch],
+    queryFn: () => organizationApi.orgChart(
+      undefined,
+      branchCode || undefined,
+      deptCode,
+      sectionCode,
+      deferredSearch || undefined,
+    ),
     staleTime: 5 * 60 * 1000,
   })
 
@@ -254,14 +263,20 @@ export default function OrgChart() {
 
   const searchResults = useMemo(() => {
     if (!search.trim()) return []
-    const query = search.toLowerCase()
+    const queryTerms = search.toLowerCase().split(/\s+/).filter(Boolean)
     return allNodes
-      .filter(
-        (node) =>
-          node.positionCode.toLowerCase().includes(query) ||
-          node.positionName.toLowerCase().includes(query) ||
-          (node.occupantName ?? '').toLowerCase().includes(query),
-      )
+      .filter((node) => {
+        const searchableValues = [
+          node.positionCode,
+          node.positionName,
+          node.occupantName ?? '',
+          ...node.occupantNames,
+        ].map((value) => value.toLowerCase())
+
+        return queryTerms.every((term) =>
+          searchableValues.some((value) => value.includes(term)),
+        )
+      })
       .slice(0, 15)
   }, [search, allNodes])
 
@@ -336,7 +351,7 @@ export default function OrgChart() {
                       {node.positionName}
                     </Text>
                     <Text type="secondary" style={{ fontSize: token.fontSizeSM, flexShrink: 0 }}>
-                      {node.occupantName ?? 'Vacant'}
+                      {node.occupantCount > 1 ? `${node.occupantCount} occupants` : node.occupantName ?? 'Vacant'}
                     </Text>
                   </div>
                 ))}
@@ -353,9 +368,11 @@ export default function OrgChart() {
             onChange={(value) => {
               setBranchCode(value)
               setDeptCode(undefined)
+              setSectionCode(undefined)
               setPath([])
             }}
             options={[
+              { value: '', label: 'All' },
               { value: 'HO', label: 'HO' },
               ...(branchOptions.data?.data ?? []).map((branch) => ({
                 value: branch.branchCode,
@@ -452,7 +469,7 @@ export default function OrgChart() {
           <Spin size="large" />
         </div>
       ) : displayNodes.length === 0 ? (
-        <Empty description="No subordinates" style={{ padding: token.paddingXL }} />
+        <Empty description={search.trim() ? 'No matching positions' : 'No subordinates'} style={{ padding: token.paddingXL }} />
       ) : (
         <div style={{ overflowX: 'auto', paddingBottom: token.paddingLG }}>
           <Tree
