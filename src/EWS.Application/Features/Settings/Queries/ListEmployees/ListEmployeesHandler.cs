@@ -14,7 +14,11 @@ public class ListEmployeesHandler(IAppDbContext db)
         var q = db.Employees
             .Include(e => e.PositionAssignments)
                 .ThenInclude(pa => pa.Position)
+                    .ThenInclude(p => p.Section)
+                        .ThenInclude(s => s.Department)
             .AsQueryable();
+
+        var now = DateTime.UtcNow.AddHours(7);
 
         if (!string.IsNullOrWhiteSpace(req.Search))
             q = q.Where(e =>
@@ -23,14 +27,29 @@ public class ListEmployeesHandler(IAppDbContext db)
                 (e.Email != null && e.Email.Contains(req.Search)) ||
                 e.PositionAssignments.Any(pa =>
                     pa.Position.PositionCode.Contains(req.Search) ||
-                    pa.Position.PositionName.Contains(req.Search)));
+                    pa.Position.PositionName.Contains(req.Search) ||
+                    pa.Position.Section.SectCode.Contains(req.Search) ||
+                    pa.Position.Section.SectName.Contains(req.Search) ||
+                    pa.Position.Section.Department.DeptCode.Contains(req.Search) ||
+                    pa.Position.Section.Department.DeptName.Contains(req.Search)));
 
         if (!string.IsNullOrWhiteSpace(req.Status) &&
             Enum.TryParse<EmployeeStatus>(req.Status, out var statusEnum))
             q = q.Where(e => e.Status == statusEnum);
 
+        if (!string.IsNullOrWhiteSpace(req.DeptCode))
+            q = q.Where(e => e.PositionAssignments.Any(pa =>
+                pa.StartDate <= now &&
+                (pa.EndDate == null || pa.EndDate >= now) &&
+                pa.Position.Section.Department.DeptCode == req.DeptCode));
+
+        if (!string.IsNullOrWhiteSpace(req.SectionCode))
+            q = q.Where(e => e.PositionAssignments.Any(pa =>
+                pa.StartDate <= now &&
+                (pa.EndDate == null || pa.EndDate >= now) &&
+                pa.Position.Section.SectCode == req.SectionCode));
+
         var total = await q.CountAsync(ct);
-        var now = DateTime.UtcNow.AddHours(7);
 
         var employees = await q.OrderBy(e => e.EmployeeCode)
             .Skip((req.Page - 1) * req.PageSize)

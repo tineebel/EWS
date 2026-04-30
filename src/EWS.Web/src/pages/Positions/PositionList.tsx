@@ -17,6 +17,7 @@ import { EyeOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import { settingsApi } from '../../api/settings'
 import type { Position } from '../../api/types'
+import { displayWfScope, formatCodeName } from '../../utils/display'
 import PositionDrawer from './PositionDrawer'
 
 const scopeColors: Record<string, string> = { Branch: 'blue', Ho: 'orange', All: 'green' }
@@ -26,12 +27,30 @@ export default function PositionList() {
   const columnWidth = token.controlHeightLG
   const [search, setSearch] = useState('')
   const [isActive, setIsActive] = useState<boolean | undefined>(true)
+  const [deptCode, setDeptCode] = useState<string | undefined>()
+  const [sectionCode, setSectionCode] = useState<string | undefined>()
   const [pagination, setPagination] = useState({ page: 1, pageSize: 20 })
   const [selectedCode, setSelectedCode] = useState<string | null>(null)
 
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['positions', search, isActive, pagination],
-    queryFn: () => settingsApi.positions.list({ search: search || undefined, isActive, ...pagination }),
+    queryKey: ['positions', search, isActive, deptCode, sectionCode, pagination],
+    queryFn: () => settingsApi.positions.list({
+      search: search || undefined,
+      isActive,
+      deptCode,
+      sectionCode,
+      ...pagination,
+    }),
+  })
+
+  const departments = useQuery({
+    queryKey: ['department-options'],
+    queryFn: () => settingsApi.departments.list({ isActive: true }),
+  })
+
+  const sections = useQuery({
+    queryKey: ['section-options', deptCode],
+    queryFn: () => settingsApi.sections.list({ deptCode, isActive: true }),
   })
 
   const positions = data?.data.items ?? []
@@ -66,9 +85,9 @@ export default function PositionList() {
       dataIndex: 'wfScopeType',
       key: 'wfScopeType',
       width: columnWidth * 2.5,
-      render: (value: string) => <Tag color={scopeColors[value] ?? 'default'}>{value}</Tag>,
+      render: (value: string) => <Tag color={scopeColors[value] ?? 'default'}>{displayWfScope(value)}</Tag>,
     },
-    { title: 'Section', dataIndex: 'sectionName', key: 'sectionName', width: columnWidth * 6.5, ellipsis: true },
+    { title: 'Section', key: 'section', width: columnWidth * 6.5, ellipsis: true, render: (_: unknown, record) => formatCodeName(record.sectionCode, record.sectionName) },
     {
       title: 'Parent',
       dataIndex: 'parentPositionCode',
@@ -167,6 +186,41 @@ export default function PositionList() {
               { value: 'active', label: 'Active' },
               { value: 'inactive', label: 'Inactive' },
             ]}
+          />
+          <Select
+            showSearch
+            allowClear
+            placeholder="Department"
+            loading={departments.isLoading}
+            style={{ width: token.controlHeightLG * 6 }}
+            value={deptCode}
+            optionFilterProp="label"
+            onChange={(value) => {
+              setDeptCode(value)
+              setSectionCode(undefined)
+              setPagination((current) => ({ ...current, page: 1 }))
+            }}
+            options={(departments.data?.data ?? []).map((department) => ({
+              value: department.deptCode,
+              label: formatCodeName(department.deptCode, department.deptName),
+            }))}
+          />
+          <Select
+            showSearch
+            allowClear
+            placeholder="Section"
+            loading={sections.isLoading}
+            style={{ width: token.controlHeightLG * 6 }}
+            value={sectionCode}
+            optionFilterProp="label"
+            onChange={(value) => {
+              setSectionCode(value)
+              setPagination((current) => ({ ...current, page: 1 }))
+            }}
+            options={(sections.data?.data ?? []).map((section) => ({
+              value: section.sectCode,
+              label: formatCodeName(section.sectCode, section.sectName),
+            }))}
           />
           <Tooltip title="Refresh">
             <Button icon={<ReloadOutlined />} onClick={() => refetch()} />

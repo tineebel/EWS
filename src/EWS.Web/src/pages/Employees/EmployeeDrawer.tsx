@@ -4,6 +4,7 @@ import { UserOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import { settingsApi } from '../../api/settings'
 import type { PositionAssignmentDetail } from '../../api/types'
+import { formatCodeName } from '../../utils/display'
 
 interface Props {
   employeeCode: string | null
@@ -31,7 +32,7 @@ export default function EmployeeDrawer({ employeeCode, onClose }: Props) {
     },
     { title: 'Position Name', dataIndex: 'positionName', key: 'positionName', width: columnWidth * 6, ellipsis: true },
     { title: 'Grade', dataIndex: 'jobGrade', key: 'jobGrade', width: columnWidth * 2 },
-    { title: 'Section', dataIndex: 'sectionName', key: 'sectionName', width: columnWidth * 5.5, ellipsis: true },
+    { title: 'Section', key: 'section', width: columnWidth * 5.5, ellipsis: true, render: (_: unknown, record) => formatCodeName(record.sectionCode, record.sectionName) },
     {
       title: 'Start Date',
       dataIndex: 'startDate',

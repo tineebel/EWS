@@ -1,3 +1,4 @@
+import { Suspense, lazy } from 'react'
 import { Layout, Menu, Typography, theme } from 'antd'
 import {
   ApartmentOutlined,
@@ -8,15 +9,16 @@ import {
   DashboardOutlined,
 } from '@ant-design/icons'
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
-import Dashboard from './pages/Dashboard'
-import PositionList from './pages/Positions/PositionList'
-import EmployeeList from './pages/Employees/EmployeeList'
-import DocumentTypeList from './pages/DocumentTypes/DocumentTypeList'
-import TemplateList from './pages/WorkflowTemplates/TemplateList'
-import DelegationList from './pages/Delegations/DelegationList'
-import OrgChart from './pages/OrgChart/OrgChart'
 
 const { Sider, Header, Content } = Layout
+
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const PositionList = lazy(() => import('./pages/Positions/PositionList'))
+const EmployeeList = lazy(() => import('./pages/Employees/EmployeeList'))
+const DocumentTypeList = lazy(() => import('./pages/DocumentTypes/DocumentTypeList'))
+const TemplateList = lazy(() => import('./pages/WorkflowTemplates/TemplateList'))
+const DelegationList = lazy(() => import('./pages/Delegations/DelegationList'))
+const OrgChart = lazy(() => import('./pages/OrgChart/OrgChart'))
 
 const menuItems = [
   { key: '/', icon: <DashboardOutlined />, label: 'Dashboard' },
@@ -72,15 +74,17 @@ export default function App() {
           </Typography.Title>
         </Header>
         <Content style={{ margin: token.marginLG }}>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/positions" element={<PositionList />} />
-            <Route path="/employees" element={<EmployeeList />} />
-            <Route path="/document-types" element={<DocumentTypeList />} />
-            <Route path="/workflow-templates" element={<TemplateList />} />
-            <Route path="/delegations" element={<DelegationList />} />
-            <Route path="/org-chart" element={<OrgChart />} />
-          </Routes>
+          <Suspense fallback={null}>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/positions" element={<PositionList />} />
+              <Route path="/employees" element={<EmployeeList />} />
+              <Route path="/document-types" element={<DocumentTypeList />} />
+              <Route path="/workflow-templates" element={<TemplateList />} />
+              <Route path="/delegations" element={<DelegationList />} />
+              <Route path="/org-chart" element={<OrgChart />} />
+            </Routes>
+          </Suspense>
         </Content>
       </Layout>
     </Layout>

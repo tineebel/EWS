@@ -26,7 +26,10 @@ public record PositionAssignmentDto(
     string PositionName,
     string? PositionShortName,
     string JobGrade,
+    string SectionCode,
     string SectionName,
+    string DeptCode,
+    string DeptName,
     DateTime StartDate,
     DateTime? EndDate,
     bool IsCurrent);

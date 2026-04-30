@@ -12,15 +12,29 @@ public class ListPositionsHandler(IAppDbContext db)
     {
         var q = db.Positions
             .Include(p => p.Section)
+                .ThenInclude(s => s.Department)
             .Include(p => p.ParentPosition)
             .Include(p => p.SecretaryPosition)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(req.Search))
-            q = q.Where(p => p.PositionCode.Contains(req.Search) || p.PositionName.Contains(req.Search));
+            q = q.Where(p =>
+                p.PositionCode.Contains(req.Search) ||
+                p.PositionName.Contains(req.Search) ||
+                (p.PositionShortName != null && p.PositionShortName.Contains(req.Search)) ||
+                p.Section.SectCode.Contains(req.Search) ||
+                p.Section.SectName.Contains(req.Search) ||
+                p.Section.Department.DeptCode.Contains(req.Search) ||
+                p.Section.Department.DeptName.Contains(req.Search));
 
         if (req.IsActive.HasValue)
             q = q.Where(p => p.IsActive == req.IsActive.Value);
+
+        if (!string.IsNullOrWhiteSpace(req.DeptCode))
+            q = q.Where(p => p.Section.Department.DeptCode == req.DeptCode);
+
+        if (!string.IsNullOrWhiteSpace(req.SectionCode))
+            q = q.Where(p => p.Section.SectCode == req.SectionCode);
 
         var total = await q.CountAsync(ct);
 
@@ -37,7 +51,10 @@ public class ListPositionsHandler(IAppDbContext db)
                 p.IsChiefLevel,
                 p.IsActive,
                 p.SectionId,
+                p.Section.SectCode,
                 p.Section.SectName,
+                p.Section.Department.DeptCode,
+                p.Section.Department.DeptName,
                 p.ParentPositionId,
                 p.ParentPosition != null ? p.ParentPosition.PositionCode : null,
                 p.SecretaryPositionId,

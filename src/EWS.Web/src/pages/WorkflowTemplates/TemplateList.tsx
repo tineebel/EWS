@@ -16,6 +16,7 @@ import { EditOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import { settingsApi } from '../../api/settings'
 import type { WorkflowStep, WorkflowTemplate } from '../../api/types'
+import { displayWfScope } from '../../utils/display'
 import TemplateEditDrawer from './TemplateEditDrawer'
 
 const scopeColors: Record<string, string> = { Branch: 'blue', Ho: 'orange', All: 'green' }
@@ -64,7 +65,7 @@ export default function TemplateList() {
       dataIndex: 'wfScopeType',
       key: 'wfScopeType',
       width: columnWidth * 2.25,
-      render: (value: string) => <Tag color={scopeColors[value] ?? 'default'}>{value}</Tag>,
+      render: (value: string) => <Tag color={scopeColors[value] ?? 'default'}>{displayWfScope(value)}</Tag>,
     },
     {
       title: 'Flags',

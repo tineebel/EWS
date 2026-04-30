@@ -5,6 +5,7 @@ using EWS.Application.Features.Settings.Queries.GetTemplateHistory;
 using EWS.Application.Features.Settings.Queries.ListDelegations;
 using EWS.Application.Features.Settings.Queries.ListDocumentTypes;
 using EWS.Application.Features.Settings.Queries.ListEmployees;
+using EWS.Application.Features.Settings.Queries.ListOrgUnits;
 using EWS.Application.Features.Settings.Queries.ListPositions;
 using EWS.Application.Features.Settings.Queries.ListWorkflowTemplates;
 using MediatR;
@@ -52,13 +53,36 @@ public class SettingsController(IMediator mediator) : ApiControllerBase
     public async Task<IActionResult> ListPositions(
         [FromQuery] string? search,
         [FromQuery] bool? isActive,
+        [FromQuery] string? deptCode,
+        [FromQuery] string? sectionCode,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken ct = default)
     {
-        var result = await mediator.Send(new ListPositionsQuery(search, isActive, page, pageSize), ct);
+        var result = await mediator.Send(new ListPositionsQuery(search, isActive, deptCode, sectionCode, page, pageSize), ct);
         if (!result.IsSuccess) return Fail($"[{result.ErrorCode}] {result.Error}");
         return Paginated(result.Value!);
+    }
+
+    [HttpGet("departments")]
+    public async Task<IActionResult> ListDepartments(
+        [FromQuery] string? search,
+        [FromQuery] bool? isActive,
+        CancellationToken ct = default)
+    {
+        var result = await mediator.Send(new ListDepartmentsQuery(search, isActive), ct);
+        return FromResult(result);
+    }
+
+    [HttpGet("sections")]
+    public async Task<IActionResult> ListSections(
+        [FromQuery] string? search,
+        [FromQuery] string? deptCode,
+        [FromQuery] bool? isActive,
+        CancellationToken ct = default)
+    {
+        var result = await mediator.Send(new ListSectionsQuery(search, deptCode, isActive), ct);
+        return FromResult(result);
     }
 
     [HttpGet("positions/{positionCode}")]
@@ -74,11 +98,13 @@ public class SettingsController(IMediator mediator) : ApiControllerBase
     public async Task<IActionResult> ListEmployees(
         [FromQuery] string? search,
         [FromQuery] string? status,
+        [FromQuery] string? deptCode,
+        [FromQuery] string? sectionCode,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken ct = default)
     {
-        var result = await mediator.Send(new ListEmployeesQuery(search, status, page, pageSize), ct);
+        var result = await mediator.Send(new ListEmployeesQuery(search, status, deptCode, sectionCode, page, pageSize), ct);
         if (!result.IsSuccess) return Fail($"[{result.ErrorCode}] {result.Error}");
         return Paginated(result.Value!);
     }

@@ -14,6 +14,7 @@ public class GetEmployeeDetailHandler(IAppDbContext db)
             .Include(e => e.PositionAssignments)
                 .ThenInclude(pa => pa.Position)
                     .ThenInclude(p => p.Section)
+                        .ThenInclude(s => s.Department)
             .FirstOrDefaultAsync(e => e.EmployeeCode == req.EmployeeCode, ct);
 
         if (employee is null)
@@ -29,7 +30,10 @@ public class GetEmployeeDetailHandler(IAppDbContext db)
                 pa.Position.PositionName,
                 pa.Position.PositionShortName,
                 pa.Position.JobGrade.ToString(),
+                pa.Position.Section.SectCode,
                 pa.Position.Section.SectName,
+                pa.Position.Section.Department.DeptCode,
+                pa.Position.Section.Department.DeptName,
                 pa.StartDate,
                 pa.EndDate,
                 pa.IsActive && pa.StartDate <= now && (pa.EndDate == null || pa.EndDate >= now)))

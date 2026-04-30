@@ -88,6 +88,14 @@ build:
 dotnet build EWS.sln -m:1 -nr:false
 ```
 
+If Windows reports `MSB3101: Could not write state file ... AssemblyReference.cache`,
+repair the local .NET build cache and start again:
+
+```powershell
+.\repair-dotnet-cache.bat
+.\start-dev.bat
+```
+
 ## Test
 
 Run all unit and integration tests:

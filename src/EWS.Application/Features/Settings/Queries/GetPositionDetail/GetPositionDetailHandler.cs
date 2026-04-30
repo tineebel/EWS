@@ -12,6 +12,7 @@ public class GetPositionDetailHandler(IAppDbContext db)
     {
         var position = await db.Positions
             .Include(p => p.Section)
+                .ThenInclude(s => s.Department)
             .Include(p => p.ParentPosition)
             .Include(p => p.SecretaryPosition)
             .Include(p => p.Assignments)
@@ -43,7 +44,10 @@ public class GetPositionDetailHandler(IAppDbContext db)
             position.PositionShortName,
             position.JobGrade.ToString(),
             position.WfScopeType.ToString(),
+            position.Section.SectCode,
             position.Section.SectName,
+            position.Section.Department.DeptCode,
+            position.Section.Department.DeptName,
             position.ParentPosition?.PositionCode,
             position.ParentPosition?.PositionName,
             position.SecretaryPosition?.PositionCode,

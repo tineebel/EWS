@@ -8,7 +8,10 @@ export interface Position {
   isChiefLevel: boolean
   isActive: boolean
   sectionId: number
+  sectionCode: string
   sectionName: string
+  deptCode: string
+  deptName: string
   parentPositionId?: number
   parentPositionCode?: string
   secretaryPositionId?: number
@@ -48,13 +51,36 @@ export interface PositionDetail extends Position {
   occupants: PositionOccupant[]
 }
 
+export interface DepartmentOption {
+  departmentId: number
+  deptCode: string
+  deptName: string
+  deptNameEn?: string
+  divisionCode: string
+  divisionName: string
+  isActive: boolean
+}
+
+export interface SectionOption {
+  sectionId: number
+  sectCode: string
+  sectName: string
+  sectNameEn?: string
+  deptCode: string
+  deptName: string
+  isActive: boolean
+}
+
 export interface PositionAssignmentDetail {
   assignmentId: number
   positionCode: string
   positionName: string
   positionShortName?: string
   jobGrade: string
+  sectionCode: string
   sectionName: string
+  deptCode: string
+  deptName: string
   startDate: string
   endDate?: string
   isCurrent: boolean

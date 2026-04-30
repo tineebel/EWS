@@ -17,6 +17,7 @@ import { ReloadOutlined, SearchOutlined, UserOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import { settingsApi } from '../../api/settings'
 import type { Employee } from '../../api/types'
+import { formatCodeName } from '../../utils/display'
 import EmployeeDrawer from './EmployeeDrawer'
 
 export default function EmployeeList() {
@@ -24,16 +25,30 @@ export default function EmployeeList() {
   const columnWidth = token.controlHeightLG
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<string>('Active')
+  const [deptCode, setDeptCode] = useState<string | undefined>()
+  const [sectionCode, setSectionCode] = useState<string | undefined>()
   const [pagination, setPagination] = useState({ page: 1, pageSize: 20 })
   const [selectedCode, setSelectedCode] = useState<string | null>(null)
 
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['employees', search, status, pagination],
+    queryKey: ['employees', search, status, deptCode, sectionCode, pagination],
     queryFn: () => settingsApi.employees.list({
       search: search || undefined,
       status: status || undefined,
+      deptCode,
+      sectionCode,
       ...pagination,
     }),
+  })
+
+  const departments = useQuery({
+    queryKey: ['department-options'],
+    queryFn: () => settingsApi.departments.list({ isActive: true }),
+  })
+
+  const sections = useQuery({
+    queryKey: ['section-options', deptCode],
+    queryFn: () => settingsApi.sections.list({ deptCode, isActive: true }),
   })
 
   const columns: ColumnsType<Employee> = [
@@ -133,6 +148,41 @@ export default function EmployeeList() {
               { value: 'Active', label: 'Active' },
               { value: 'Resigned', label: 'Resigned' },
             ]}
+          />
+          <Select
+            showSearch
+            allowClear
+            placeholder="Department"
+            loading={departments.isLoading}
+            style={{ width: token.controlHeightLG * 6 }}
+            value={deptCode}
+            optionFilterProp="label"
+            onChange={(value) => {
+              setDeptCode(value)
+              setSectionCode(undefined)
+              setPagination((current) => ({ ...current, page: 1 }))
+            }}
+            options={(departments.data?.data ?? []).map((department) => ({
+              value: department.deptCode,
+              label: formatCodeName(department.deptCode, department.deptName),
+            }))}
+          />
+          <Select
+            showSearch
+            allowClear
+            placeholder="Section"
+            loading={sections.isLoading}
+            style={{ width: token.controlHeightLG * 6 }}
+            value={sectionCode}
+            optionFilterProp="label"
+            onChange={(value) => {
+              setSectionCode(value)
+              setPagination((current) => ({ ...current, page: 1 }))
+            }}
+            options={(sections.data?.data ?? []).map((section) => ({
+              value: section.sectCode,
+              label: formatCodeName(section.sectCode, section.sectName),
+            }))}
           />
           <Tooltip title="Refresh">
             <Button icon={<ReloadOutlined />} onClick={() => refetch()} />

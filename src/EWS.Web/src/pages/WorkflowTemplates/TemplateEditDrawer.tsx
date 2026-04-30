@@ -22,6 +22,7 @@ import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { settingsApi } from '../../api/settings'
 import type { UpdateStepRequest, WorkflowTemplate } from '../../api/types'
+import { displayWfScope } from '../../utils/display'
 
 const { TextArea } = Input
 
@@ -38,7 +39,7 @@ const APPROVER_TYPE_OPTIONS = [
 
 const SCOPE_OPTIONS = [
   { value: 'Branch', label: 'Branch' },
-  { value: 'Ho', label: 'Ho' },
+  { value: 'Ho', label: displayWfScope('Ho') },
   { value: 'All', label: 'All' },
 ]
 
