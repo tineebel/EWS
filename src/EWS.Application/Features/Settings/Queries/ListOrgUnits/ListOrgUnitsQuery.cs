@@ -12,6 +12,7 @@ public record ListSectionsQuery(string? Search, string? DeptCode, bool? IsActive
 public record DepartmentOptionDto(
     int DepartmentId,
     string DeptCode,
+    string? DeptShortCode,
     string DeptName,
     string? DeptNameEn,
     string DivisionCode,
@@ -21,6 +22,7 @@ public record DepartmentOptionDto(
 public record SectionOptionDto(
     int SectionId,
     string SectCode,
+    string? SectShortCode,
     string SectName,
     string? SectNameEn,
     string DeptCode,

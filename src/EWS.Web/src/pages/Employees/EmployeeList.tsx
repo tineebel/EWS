@@ -17,7 +17,7 @@ import { ReloadOutlined, SearchOutlined, UserOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import { settingsApi } from '../../api/settings'
 import type { Employee } from '../../api/types'
-import { formatCodeName } from '../../utils/display'
+import { formatShortCodeName } from '../../utils/display'
 import EmployeeDrawer from './EmployeeDrawer'
 
 export default function EmployeeList() {
@@ -164,7 +164,7 @@ export default function EmployeeList() {
             }}
             options={(departments.data?.data ?? []).map((department) => ({
               value: department.deptCode,
-              label: formatCodeName(department.deptCode, department.deptName),
+              label: formatShortCodeName(department.deptShortCode, department.deptCode, department.deptName),
             }))}
           />
           <Select
@@ -181,7 +181,7 @@ export default function EmployeeList() {
             }}
             options={(sections.data?.data ?? []).map((section) => ({
               value: section.sectCode,
-              label: formatCodeName(section.sectCode, section.sectName),
+              label: formatShortCodeName(section.sectShortCode, section.sectCode, section.sectName),
             }))}
           />
           <Tooltip title="Refresh">

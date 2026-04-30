@@ -3,7 +3,7 @@ import type { ColumnsType } from 'antd/es/table'
 import { useQuery } from '@tanstack/react-query'
 import { settingsApi } from '../../api/settings'
 import type { PositionOccupant } from '../../api/types'
-import { displayWfScope, formatCodeName } from '../../utils/display'
+import { displayWfScope, formatShortCodeName } from '../../utils/display'
 
 interface Props {
   positionCode: string | null
@@ -98,8 +98,8 @@ export default function PositionDrawer({ positionCode, onClose }: Props) {
           >
             <Descriptions.Item label="Grade">{position.jobGrade}</Descriptions.Item>
             <Descriptions.Item label="Scope">{displayWfScope(position.wfScopeType)}</Descriptions.Item>
-            <Descriptions.Item label="Department" span={2}>{formatCodeName(position.deptCode, position.deptName)}</Descriptions.Item>
-            <Descriptions.Item label="Section" span={2}>{formatCodeName(position.sectionCode, position.sectionName)}</Descriptions.Item>
+            <Descriptions.Item label="Department" span={2}>{formatShortCodeName(position.deptShortCode, position.deptCode, position.deptName)}</Descriptions.Item>
+            <Descriptions.Item label="Section" span={2}>{formatShortCodeName(position.sectionShortCode, position.sectionCode, position.sectionName)}</Descriptions.Item>
             <Descriptions.Item label="Parent">
               {position.parentPositionCode ? (
                 <Space size={token.marginXXS}>

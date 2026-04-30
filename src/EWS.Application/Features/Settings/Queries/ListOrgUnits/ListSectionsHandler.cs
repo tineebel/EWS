@@ -17,9 +17,11 @@ public class ListSectionsHandler(IAppDbContext db)
         if (!string.IsNullOrWhiteSpace(req.Search))
             q = q.Where(s =>
                 s.SectCode.Contains(req.Search) ||
+                (s.SectShortCode != null && s.SectShortCode.Contains(req.Search)) ||
                 s.SectName.Contains(req.Search) ||
                 (s.SectNameEn != null && s.SectNameEn.Contains(req.Search)) ||
                 s.Department.DeptCode.Contains(req.Search) ||
+                (s.Department.DeptShortCode != null && s.Department.DeptShortCode.Contains(req.Search)) ||
                 s.Department.DeptName.Contains(req.Search));
 
         if (!string.IsNullOrWhiteSpace(req.DeptCode))
@@ -33,6 +35,7 @@ public class ListSectionsHandler(IAppDbContext db)
             .Select(s => new SectionOptionDto(
                 s.SectionId,
                 s.SectCode,
+                s.SectShortCode,
                 s.SectName,
                 s.SectNameEn,
                 s.Department.DeptCode,

@@ -13,6 +13,9 @@ public class Department : BaseEntity
     /// <summary>e.g., J100, F200, B100, C200</summary>
     public string DeptCode { get; set; } = string.Empty;
 
+    /// <summary>Short display/search code, e.g., ACC, FIN, MKT</summary>
+    public string? DeptShortCode { get; set; }
+
     public string DeptName { get; set; } = string.Empty;
     public string? DeptNameEn { get; set; }
 

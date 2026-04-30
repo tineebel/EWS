@@ -9,8 +9,10 @@ export interface Position {
   isActive: boolean
   sectionId: number
   sectionCode: string
+  sectionShortCode?: string
   sectionName: string
   deptCode: string
+  deptShortCode?: string
   deptName: string
   parentPositionId?: number
   parentPositionCode?: string
@@ -54,6 +56,7 @@ export interface PositionDetail extends Position {
 export interface DepartmentOption {
   departmentId: number
   deptCode: string
+  deptShortCode?: string
   deptName: string
   deptNameEn?: string
   divisionCode: string
@@ -64,6 +67,7 @@ export interface DepartmentOption {
 export interface SectionOption {
   sectionId: number
   sectCode: string
+  sectShortCode?: string
   sectName: string
   sectNameEn?: string
   deptCode: string
@@ -78,8 +82,10 @@ export interface PositionAssignmentDetail {
   positionShortName?: string
   jobGrade: string
   sectionCode: string
+  sectionShortCode?: string
   sectionName: string
   deptCode: string
+  deptShortCode?: string
   deptName: string
   startDate: string
   endDate?: string

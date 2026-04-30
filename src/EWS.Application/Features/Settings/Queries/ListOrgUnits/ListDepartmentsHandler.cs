@@ -17,6 +17,7 @@ public class ListDepartmentsHandler(IAppDbContext db)
         if (!string.IsNullOrWhiteSpace(req.Search))
             q = q.Where(d =>
                 d.DeptCode.Contains(req.Search) ||
+                (d.DeptShortCode != null && d.DeptShortCode.Contains(req.Search)) ||
                 d.DeptName.Contains(req.Search) ||
                 (d.DeptNameEn != null && d.DeptNameEn.Contains(req.Search)));
 
@@ -28,6 +29,7 @@ public class ListDepartmentsHandler(IAppDbContext db)
             .Select(d => new DepartmentOptionDto(
                 d.DepartmentId,
                 d.DeptCode,
+                d.DeptShortCode,
                 d.DeptName,
                 d.DeptNameEn,
                 d.Division.DivisionCode,

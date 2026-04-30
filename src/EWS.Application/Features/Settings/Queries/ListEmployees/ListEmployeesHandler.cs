@@ -29,8 +29,10 @@ public class ListEmployeesHandler(IAppDbContext db)
                     pa.Position.PositionCode.Contains(req.Search) ||
                     pa.Position.PositionName.Contains(req.Search) ||
                     pa.Position.Section.SectCode.Contains(req.Search) ||
+                    (pa.Position.Section.SectShortCode != null && pa.Position.Section.SectShortCode.Contains(req.Search)) ||
                     pa.Position.Section.SectName.Contains(req.Search) ||
                     pa.Position.Section.Department.DeptCode.Contains(req.Search) ||
+                    (pa.Position.Section.Department.DeptShortCode != null && pa.Position.Section.Department.DeptShortCode.Contains(req.Search)) ||
                     pa.Position.Section.Department.DeptName.Contains(req.Search)));
 
         if (!string.IsNullOrWhiteSpace(req.Status) &&

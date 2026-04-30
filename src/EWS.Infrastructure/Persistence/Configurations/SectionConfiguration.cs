@@ -11,6 +11,7 @@ public class SectionConfiguration : IEntityTypeConfiguration<Section>
         builder.ToTable("Sections", "dbo");
         builder.HasKey(x => x.SectionId);
         builder.Property(x => x.SectCode).HasMaxLength(20).IsRequired();
+        builder.Property(x => x.SectShortCode).HasMaxLength(20);
         builder.Property(x => x.SectName).HasMaxLength(200).IsRequired();
         builder.Property(x => x.SectNameEn).HasMaxLength(200);
         builder.Property(x => x.CreatedBy).HasMaxLength(100);

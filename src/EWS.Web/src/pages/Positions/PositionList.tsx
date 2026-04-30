@@ -17,7 +17,7 @@ import { EyeOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import { settingsApi } from '../../api/settings'
 import type { Position } from '../../api/types'
-import { displayWfScope, formatCodeName } from '../../utils/display'
+import { displayWfScope, formatShortCodeName } from '../../utils/display'
 import PositionDrawer from './PositionDrawer'
 
 const scopeColors: Record<string, string> = { Branch: 'blue', Ho: 'orange', All: 'green' }
@@ -87,7 +87,7 @@ export default function PositionList() {
       width: columnWidth * 2.5,
       render: (value: string) => <Tag color={scopeColors[value] ?? 'default'}>{displayWfScope(value)}</Tag>,
     },
-    { title: 'Section', key: 'section', width: columnWidth * 6.5, ellipsis: true, render: (_: unknown, record) => formatCodeName(record.sectionCode, record.sectionName) },
+    { title: 'Section', key: 'section', width: columnWidth * 6.5, ellipsis: true, render: (_: unknown, record) => formatShortCodeName(record.sectionShortCode, record.sectionCode, record.sectionName) },
     {
       title: 'Parent',
       dataIndex: 'parentPositionCode',
@@ -202,7 +202,7 @@ export default function PositionList() {
             }}
             options={(departments.data?.data ?? []).map((department) => ({
               value: department.deptCode,
-              label: formatCodeName(department.deptCode, department.deptName),
+              label: formatShortCodeName(department.deptShortCode, department.deptCode, department.deptName),
             }))}
           />
           <Select
@@ -219,7 +219,7 @@ export default function PositionList() {
             }}
             options={(sections.data?.data ?? []).map((section) => ({
               value: section.sectCode,
-              label: formatCodeName(section.sectCode, section.sectName),
+              label: formatShortCodeName(section.sectShortCode, section.sectCode, section.sectName),
             }))}
           />
           <Tooltip title="Refresh">

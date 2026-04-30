@@ -13,6 +13,9 @@ public class Section : BaseEntity
     /// <summary>e.g., J101, F201, F202, B104</summary>
     public string SectCode { get; set; } = string.Empty;
 
+    /// <summary>Short display/search code, e.g., AR, ERP, MBK</summary>
+    public string? SectShortCode { get; set; }
+
     public string SectName { get; set; } = string.Empty;
     public string? SectNameEn { get; set; }
 

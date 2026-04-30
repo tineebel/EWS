@@ -23,8 +23,10 @@ public class ListPositionsHandler(IAppDbContext db)
                 p.PositionName.Contains(req.Search) ||
                 (p.PositionShortName != null && p.PositionShortName.Contains(req.Search)) ||
                 p.Section.SectCode.Contains(req.Search) ||
+                (p.Section.SectShortCode != null && p.Section.SectShortCode.Contains(req.Search)) ||
                 p.Section.SectName.Contains(req.Search) ||
                 p.Section.Department.DeptCode.Contains(req.Search) ||
+                (p.Section.Department.DeptShortCode != null && p.Section.Department.DeptShortCode.Contains(req.Search)) ||
                 p.Section.Department.DeptName.Contains(req.Search));
 
         if (req.IsActive.HasValue)
@@ -52,8 +54,10 @@ public class ListPositionsHandler(IAppDbContext db)
                 p.IsActive,
                 p.SectionId,
                 p.Section.SectCode,
+                p.Section.SectShortCode,
                 p.Section.SectName,
                 p.Section.Department.DeptCode,
+                p.Section.Department.DeptShortCode,
                 p.Section.Department.DeptName,
                 p.ParentPositionId,
                 p.ParentPosition != null ? p.ParentPosition.PositionCode : null,
