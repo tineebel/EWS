@@ -1,14 +1,28 @@
 import { useState } from 'react'
-import { Table, Select, Space, Tag, Card, Button, Tooltip, Typography, InputNumber } from 'antd'
-import { ReloadOutlined, EditOutlined } from '@ant-design/icons'
+import {
+  Button,
+  Card,
+  InputNumber,
+  Select,
+  Space,
+  Table,
+  Tag,
+  Tooltip,
+  Typography,
+  theme,
+} from 'antd'
+import type { ColumnsType } from 'antd/es/table'
+import { EditOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import { settingsApi } from '../../api/settings'
-import type { WorkflowTemplate, WorkflowStep } from '../../api/types'
+import type { WorkflowStep, WorkflowTemplate } from '../../api/types'
 import TemplateEditDrawer from './TemplateEditDrawer'
 
 const scopeColors: Record<string, string> = { Branch: 'blue', Ho: 'orange', All: 'green' }
 
 export default function TemplateList() {
+  const { token } = theme.useToken()
+  const columnWidth = token.controlHeightLG
   const [docCode, setDocCode] = useState<number | undefined>()
   const [isActive, setIsActive] = useState<boolean | undefined>(true)
   const [editingTemplate, setEditingTemplate] = useState<WorkflowTemplate | null>(null)
@@ -18,47 +32,87 @@ export default function TemplateList() {
     queryFn: () => settingsApi.workflowTemplates.list({ docCode, isActive }),
   })
 
-  const stepColumns = [
-    { title: 'Order', dataIndex: 'stepOrder', key: 'stepOrder', width: 70 },
-    { title: 'Step Name', dataIndex: 'stepName', key: 'stepName', width: 180 },
-    { title: 'Approver Type', dataIndex: 'approverType', key: 'approverType', width: 160 },
-    { title: 'Specific Position', dataIndex: 'specificPositionCode', key: 'specificPositionCode', width: 160, render: (v?: string) => v ? <code>{v}</code> : '-' },
-    { title: 'Required', dataIndex: 'isRequired', key: 'isRequired', width: 90, render: (v: boolean) => <Tag color={v ? 'red' : 'default'}>{v ? 'Yes' : 'No'}</Tag> },
+  const templates = data?.data ?? []
+
+  const stepColumns: ColumnsType<WorkflowStep> = [
+    { title: 'Order', dataIndex: 'stepOrder', key: 'stepOrder', width: columnWidth * 2 },
+    { title: 'Step Name', dataIndex: 'stepName', key: 'stepName', width: columnWidth * 6.5 },
+    { title: 'Approver Type', dataIndex: 'approverType', key: 'approverType', width: columnWidth * 5.5 },
+    {
+      title: 'Specific Position',
+      dataIndex: 'specificPositionCode',
+      key: 'specificPositionCode',
+      width: columnWidth * 5.5,
+      render: (value?: string) => value ? <code>{value}</code> : '-',
+    },
+    {
+      title: 'Required',
+      dataIndex: 'isRequired',
+      key: 'isRequired',
+      width: columnWidth * 3,
+      render: (value: boolean) => <Tag color={value ? 'red' : 'default'}>{value ? 'Yes' : 'No'}</Tag>,
+    },
   ]
 
-  const columns = [
-    { title: 'DocCode', dataIndex: 'docCode', key: 'docCode', width: 90 },
-    { title: 'DocName', dataIndex: 'docName', key: 'docName', ellipsis: true },
-    { title: 'Flow', dataIndex: 'flowCode', key: 'flowCode', width: 70 },
-    { title: 'Description', dataIndex: 'flowDesc', key: 'flowDesc', ellipsis: true },
-    { title: 'Scope', dataIndex: 'wfScopeType', key: 'wfScopeType', width: 80, render: (v: string) => <Tag color={scopeColors[v] ?? 'default'}>{v}</Tag> },
+  const columns: ColumnsType<WorkflowTemplate> = [
+    { title: 'DocCode', dataIndex: 'docCode', key: 'docCode', width: columnWidth * 2.25 },
+    { title: 'DocName', dataIndex: 'docName', key: 'docName', width: columnWidth * 6.5, ellipsis: true },
+    { title: 'Flow', dataIndex: 'flowCode', key: 'flowCode', width: columnWidth * 1.75 },
+    { title: 'Description', dataIndex: 'flowDesc', key: 'flowDesc', width: columnWidth * 7, ellipsis: true },
     {
-      title: 'Flags', key: 'flags', width: 130,
-      render: (_: unknown, r: WorkflowTemplate) => (
-        <Space size={4}>
-          {r.hasSpecialItem && <Tag color="purple">Special</Tag>}
-          {r.isUrgent && <Tag color="red">Urgent</Tag>}
+      title: 'Scope',
+      dataIndex: 'wfScopeType',
+      key: 'wfScopeType',
+      width: columnWidth * 2.25,
+      render: (value: string) => <Tag color={scopeColors[value] ?? 'default'}>{value}</Tag>,
+    },
+    {
+      title: 'Flags',
+      key: 'flags',
+      width: columnWidth * 3.5,
+      render: (_: unknown, record: WorkflowTemplate) => (
+        <Space size={token.marginXXS}>
+          {record.hasSpecialItem && <Tag color="purple">Special</Tag>}
+          {record.isUrgent && <Tag color="red">Urgent</Tag>}
         </Space>
-      )
+      ),
     },
     {
-      title: 'Conditions', key: 'cond', width: 140,
-      render: (_: unknown, r: WorkflowTemplate) => (
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          {[r.condition1, r.condition2].filter(Boolean).join(', ') || '-'}
+      title: 'Conditions',
+      key: 'conditions',
+      width: columnWidth * 4,
+      render: (_: unknown, record: WorkflowTemplate) => (
+        <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+          {[record.condition1, record.condition2].filter(Boolean).join(', ') || '-'}
         </Typography.Text>
-      )
+      ),
     },
-    { title: 'Steps', key: 'steps', width: 70, render: (_: unknown, r: WorkflowTemplate) => r.steps.length },
-    { title: 'Status', dataIndex: 'isActive', key: 'isActive', width: 90, render: (v: boolean) => <Tag color={v ? 'green' : 'red'}>{v ? 'Active' : 'Inactive'}</Tag> },
     {
-      title: 'Action', key: 'action', width: 80,
-      render: (_: unknown, r: WorkflowTemplate) => (
+      title: 'Steps',
+      key: 'steps',
+      width: columnWidth * 2,
+      render: (_: unknown, record: WorkflowTemplate) => record.steps.length,
+    },
+    {
+      title: 'Status',
+      dataIndex: 'isActive',
+      key: 'isActive',
+      width: columnWidth * 2.5,
+      render: (value: boolean) => <Tag color={value ? 'green' : 'red'}>{value ? 'Active' : 'Inactive'}</Tag>,
+    },
+    {
+      title: 'Action',
+      key: 'action',
+      width: columnWidth * 2.25,
+      render: (_: unknown, record: WorkflowTemplate) => (
         <Tooltip title="Edit">
           <Button
             icon={<EditOutlined />}
             size="small"
-            onClick={() => setEditingTemplate(r)}
+            onClick={(event) => {
+              event.stopPropagation()
+              setEditingTemplate(record)
+            }}
           />
         </Tooltip>
       ),
@@ -67,21 +121,21 @@ export default function TemplateList() {
 
   return (
     <>
-      <Card>
-        <Space style={{ marginBottom: 16 }} wrap>
+      <Card styles={{ body: { padding: token.paddingLG } }}>
+        <Space style={{ marginBottom: token.marginMD }} wrap>
           <InputNumber
             placeholder="DocCode"
-            style={{ width: 120 }}
+            style={{ width: token.controlHeightLG * 3 }}
             value={docCode}
-            onChange={v => setDocCode(v ?? undefined)}
+            onChange={(value) => setDocCode(value ?? undefined)}
             min={1}
           />
           <Select
-            style={{ width: 140 }}
+            style={{ width: token.controlHeightLG * 4 }}
             value={isActive === undefined ? 'all' : isActive ? 'active' : 'inactive'}
-            onChange={v => setIsActive(v === 'all' ? undefined : v === 'active')}
+            onChange={(value) => setIsActive(value === 'all' ? undefined : value === 'active')}
             options={[
-              { value: 'all', label: 'ทั้งหมด' },
+              { value: 'all', label: 'All' },
               { value: 'active', label: 'Active' },
               { value: 'inactive', label: 'Inactive' },
             ]}
@@ -90,24 +144,37 @@ export default function TemplateList() {
             <Button icon={<ReloadOutlined />} onClick={() => refetch()} />
           </Tooltip>
         </Space>
+
         <Table
           columns={columns}
-          dataSource={data?.data as WorkflowTemplate[] | undefined}
+          dataSource={templates}
           rowKey="templateId"
           loading={isLoading}
           size="small"
-          pagination={{ pageSize: 50, showTotal: (t) => `ทั้งหมด ${t} รายการ` }}
+          pagination={{ pageSize: 50, showTotal: (total) => `Total ${total} templates` }}
+          scroll={{ x: true }}
           expandable={{
-            expandedRowRender: (r: WorkflowTemplate) => (
-              <div style={{ padding: '0 16px 16px' }}>
-                <Typography.Text strong>Approval Steps ({r.steps.length})</Typography.Text>
+            rowExpandable: (record) => record.steps.length > 0,
+            expandRowByClick: true,
+            expandedRowRender: (record) => (
+              <div
+                style={{
+                  padding: `${token.paddingSM}px ${token.paddingLG}px ${token.paddingLG}px`,
+                  background: token.colorFillTertiary,
+                  borderTop: `1px solid ${token.colorBorderSecondary}`,
+                }}
+              >
+                <Typography.Text strong>
+                  Approval Steps ({record.steps.length})
+                </Typography.Text>
                 <Table
                   columns={stepColumns}
-                  dataSource={r.steps as WorkflowStep[]}
+                  dataSource={record.steps}
                   rowKey="stepId"
                   size="small"
                   pagination={false}
-                  style={{ marginTop: 8 }}
+                  style={{ marginTop: token.marginXS }}
+                  scroll={{ x: true }}
                 />
               </div>
             ),

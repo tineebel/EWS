@@ -1,33 +1,41 @@
-import { useState, useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 import { Tree, TreeNode } from 'react-organizational-chart'
 import {
-  Card, Breadcrumb, Input, Tag, Spin, Empty, Typography, Space, Tooltip, Button,
+  Breadcrumb,
+  Button,
+  Card,
+  Empty,
+  Input,
+  Space,
+  Spin,
+  Tag,
+  Tooltip,
+  Typography,
+  theme,
 } from 'antd'
 import {
-  HomeOutlined, SearchOutlined, UserOutlined, TeamOutlined, DownOutlined,
+  DownOutlined,
+  HomeOutlined,
+  SearchOutlined,
+  TeamOutlined,
+  UserOutlined,
 } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
-import { organizationApi, OrgChartNode } from '../../api/organization'
+import { OrgChartNode, organizationApi } from '../../api/organization'
 
 const { Text } = Typography
 
-const DISPLAY_DEPTH = 2 // levels to render at once
-
-const gradeColor: Record<string, string> = {
-  A0: '#cf1322', A1: '#d4380d', A2: '#d46b08', A3: '#d48806',
-  B0: '#096dd9', B1: '#0958d9', B2: '#1677ff',
-  C1: '#389e0d', C3: '#389e0d', D1: '#8c8c8c',
-}
+const DISPLAY_DEPTH = 2
 
 function countDescendants(node: OrgChartNode): number {
-  return node.children.reduce((s, c) => s + 1 + countDescendants(c), 0)
+  return node.children.reduce((sum, child) => sum + 1 + countDescendants(child), 0)
 }
 
 function flattenTree(nodes: OrgChartNode[]): OrgChartNode[] {
-  return nodes.flatMap(n => [n, ...flattenTree(n.children)])
+  return nodes.flatMap((node) => [node, ...flattenTree(node.children)])
 }
 
-// ── Node card ───────────────────────────────────────────────
 function NodeBox({
   node,
   isRoot = false,
@@ -35,9 +43,10 @@ function NodeBox({
 }: {
   node: OrgChartNode
   isRoot?: boolean
-  onDrillDown: (n: OrgChartNode) => void
+  onDrillDown: (node: OrgChartNode) => void
 }) {
-  const color = gradeColor[node.jobGrade] ?? '#8c8c8c'
+  const { token } = theme.useToken()
+  const gradeColor = getGradeColor(node.jobGrade, token)
   const subCount = countDescendants(node)
   const hasChildren = node.children.length > 0
 
@@ -45,47 +54,43 @@ function NodeBox({
     <div
       style={{
         display: 'inline-block',
-        background: '#fff',
-        border: `2px solid ${isRoot ? '#1677ff' : color}`,
-        borderRadius: 8,
-        padding: '8px 12px',
-        minWidth: 160,
-        maxWidth: 200,
+        background: token.colorBgContainer,
+        border: `${token.lineWidthBold}px ${token.lineType} ${isRoot ? token.colorPrimary : gradeColor}`,
+        borderRadius: token.borderRadiusLG,
+        padding: `${token.paddingXS}px ${token.paddingSM}px`,
+        minWidth: token.controlHeightLG * 4,
+        maxWidth: token.controlHeightLG * 5,
         textAlign: 'left',
-        boxShadow: isRoot
-          ? '0 0 0 3px #bae0ff, 0 2px 8px rgba(0,0,0,0.12)'
-          : '0 1px 4px rgba(0,0,0,0.08)',
+        boxShadow: isRoot ? token.boxShadowSecondary : token.boxShadowTertiary,
         cursor: hasChildren ? 'pointer' : 'default',
-        transition: 'box-shadow 0.2s',
+        transition: `box-shadow ${token.motionDurationMid}`,
         userSelect: 'none',
       }}
       onClick={() => hasChildren && onDrillDown(node)}
-      title={hasChildren ? `คลิกเพื่อดู subordinates` : undefined}
+      title={hasChildren ? 'Click to view subordinates' : undefined}
     >
-      {/* Grade badge */}
-      <div style={{ marginBottom: 4 }}>
+      <div style={{ marginBottom: token.marginXXS }}>
         <Tag
-          color={color}
-          style={{ margin: 0, fontSize: 10, padding: '0 5px', lineHeight: '16px' }}
+          color={gradeColor}
+          style={{ margin: 0, fontSize: token.fontSizeSM, paddingInline: token.paddingXXS, lineHeight: `${token.controlHeightSM}px` }}
         >
           {node.jobGrade}
         </Tag>
         {node.secretaryCode && (
-          <Tooltip title={`เลขา: ${node.secretaryCode}`}>
-            <Tag color="purple" style={{ margin: '0 0 0 4px', fontSize: 10, padding: '0 4px', lineHeight: '16px' }}>
-              เลขา
+          <Tooltip title={`Secretary: ${node.secretaryCode}`}>
+            <Tag color="purple" style={{ margin: `0 0 0 ${token.marginXXS}px`, fontSize: token.fontSizeSM, paddingInline: token.paddingXXS, lineHeight: `${token.controlHeightSM}px` }}>
+              Secretary
             </Tag>
           </Tooltip>
         )}
       </div>
 
-      {/* Position name */}
       <div
         style={{
-          fontSize: 12,
-          fontWeight: 600,
-          lineHeight: '16px',
-          marginBottom: 2,
+          fontSize: token.fontSizeSM,
+          fontWeight: token.fontWeightStrong,
+          lineHeight: `${token.lineHeightSM * token.fontSizeSM}px`,
+          marginBottom: token.marginXXS / 2,
           overflow: 'hidden',
           display: '-webkit-box',
           WebkitLineClamp: 2,
@@ -96,59 +101,63 @@ function NodeBox({
         {node.positionName}
       </div>
 
-      {/* Position code */}
-      <div style={{ fontSize: 10, color: '#8c8c8c', marginBottom: 4 }}>
+      <div style={{ fontSize: token.fontSizeSM, color: token.colorTextTertiary, marginBottom: token.marginXXS }}>
         {node.positionCode}
       </div>
 
-      {/* Occupant */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: token.marginXXS }}>
         <UserOutlined
-          style={{ fontSize: 10, color: node.isVacant ? '#ff4d4f' : '#52c41a' }}
+          style={{ fontSize: token.fontSizeSM, color: node.isVacant ? token.colorError : token.colorSuccess }}
         />
         <span
           style={{
-            fontSize: 11,
-            color: node.isVacant ? '#ff4d4f' : '#262626',
+            fontSize: token.fontSizeSM,
+            color: node.isVacant ? token.colorError : token.colorText,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
-            maxWidth: 140,
+            maxWidth: token.controlHeightLG * 3.5,
           }}
-          title={node.occupantName ?? 'ว่าง'}
+          title={node.occupantName ?? 'Vacant'}
         >
-          {node.occupantName ?? 'ว่าง'}
+          {node.occupantName ?? 'Vacant'}
         </span>
       </div>
 
-      {/* Subordinate count (leaf of current view) */}
       {subCount > 0 && (
         <div
           style={{
-            marginTop: 6,
-            fontSize: 10,
-            color: '#1677ff',
+            marginTop: token.marginXS,
+            fontSize: token.fontSizeSM,
+            color: token.colorPrimary,
             display: 'flex',
             alignItems: 'center',
-            gap: 3,
+            gap: token.marginXXS,
           }}
         >
           <TeamOutlined />
-          {subCount} คน
-          {hasChildren && <DownOutlined style={{ fontSize: 8 }} />}
+          {subCount} people
+          {hasChildren && <DownOutlined style={{ fontSize: token.fontSizeSM }} />}
         </div>
       )}
     </div>
   )
 }
 
-// ── Recursive TreeNode builder (limited depth) ──────────────
+function getGradeColor(jobGrade: string, token: ReturnType<typeof theme.useToken>['token']) {
+  if (jobGrade.startsWith('A')) return token.colorError
+  if (jobGrade.startsWith('B')) return token.colorPrimary
+  if (jobGrade.startsWith('C')) return token.colorSuccess
+  if (jobGrade.startsWith('D')) return token.colorTextTertiary
+  return token.colorWarning
+}
+
 function buildTreeNodes(
   nodes: OrgChartNode[],
   depth: number,
-  onDrillDown: (n: OrgChartNode) => void,
-): React.ReactNode {
-  return nodes.map(node => (
+  onDrillDown: (node: OrgChartNode) => void,
+): ReactNode {
+  return nodes.map((node) => (
     <TreeNode
       key={node.positionId}
       label={<NodeBox node={node} onDrillDown={onDrillDown} />}
@@ -160,8 +169,8 @@ function buildTreeNodes(
   ))
 }
 
-// ── Main page ───────────────────────────────────────────────
 export default function OrgChart() {
+  const { token } = theme.useToken()
   const [path, setPath] = useState<OrgChartNode[]>([])
   const [search, setSearch] = useState('')
 
@@ -174,33 +183,31 @@ export default function OrgChart() {
   const topNodes = data?.data ?? []
   const currentNode = path.length > 0 ? path[path.length - 1] : null
   const displayNodes = currentNode ? currentNode.children : topNodes
-
   const allNodes = useMemo(() => flattenTree(topNodes), [topNodes])
 
   const searchResults = useMemo(() => {
     if (!search.trim()) return []
-    const q = search.toLowerCase()
+    const query = search.toLowerCase()
     return allNodes
       .filter(
-        n =>
-          n.positionCode.toLowerCase().includes(q) ||
-          n.positionName.toLowerCase().includes(q) ||
-          (n.occupantName ?? '').toLowerCase().includes(q),
+        (node) =>
+          node.positionCode.toLowerCase().includes(query) ||
+          node.positionName.toLowerCase().includes(query) ||
+          (node.occupantName ?? '').toLowerCase().includes(query),
       )
       .slice(0, 15)
   }, [search, allNodes])
 
   function drillDown(node: OrgChartNode) {
-    setPath(prev => [...prev, node])
+    setPath((current) => [...current, node])
   }
 
   function jumpTo(node: OrgChartNode) {
-    // Build path from root to node
     function findPath(nodes: OrgChartNode[], target: number): OrgChartNode[] | null {
-      for (const n of nodes) {
-        if (n.positionId === target) return [n]
-        const sub = findPath(n.children, target)
-        if (sub) return [n, ...sub]
+      for (const current of nodes) {
+        if (current.positionId === target) return [current]
+        const subPath = findPath(current.children, target)
+        if (subPath) return [current, ...subPath]
       }
       return null
     }
@@ -211,16 +218,15 @@ export default function OrgChart() {
 
   return (
     <div>
-      {/* Search */}
-      <Card size="small" style={{ marginBottom: 16 }}>
+      <Card size="small" style={{ marginBottom: token.marginMD }}>
         <div style={{ position: 'relative', display: 'inline-block' }}>
           <Input
             prefix={<SearchOutlined />}
-            placeholder="ค้นหา Position / ชื่อตำแหน่ง / พนักงาน"
+            placeholder="Search position, name, or employee"
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={(event) => setSearch(event.target.value)}
             allowClear
-            style={{ width: 340 }}
+            style={{ width: token.controlHeightLG * 8.5 }}
           />
           {searchResults.length > 0 && (
             <div
@@ -228,43 +234,41 @@ export default function OrgChart() {
                 position: 'absolute',
                 top: '100%',
                 left: 0,
-                zIndex: 100,
-                background: '#fff',
-                border: '1px solid #d9d9d9',
-                borderRadius: 6,
-                boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
-                marginTop: 2,
-                width: 340,
-                maxHeight: 300,
+                zIndex: token.zIndexPopupBase,
+                background: token.colorBgContainer,
+                border: `${token.lineWidth}px ${token.lineType} ${token.colorBorder}`,
+                borderRadius: token.borderRadius,
+                boxShadow: token.boxShadowSecondary,
+                marginTop: token.marginXXS,
+                width: token.controlHeightLG * 8.5,
+                maxHeight: token.controlHeightLG * 7.5,
                 overflowY: 'auto',
               }}
             >
-              {searchResults.map(n => (
+              {searchResults.map((node) => (
                 <div
-                  key={n.positionId}
-                  onClick={() => jumpTo(n)}
+                  key={node.positionId}
+                  onClick={() => jumpTo(node)}
                   style={{
-                    padding: '7px 12px',
+                    padding: `${token.paddingXXS}px ${token.paddingSM}px`,
                     cursor: 'pointer',
-                    borderBottom: '1px solid #f5f5f5',
+                    borderBottom: `${token.lineWidth}px ${token.lineType} ${token.colorSplit}`,
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 8,
+                    gap: token.marginXS,
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.background = '#f5f5f5')}
-                  onMouseLeave={e => (e.currentTarget.style.background = '')}
                 >
                   <Tag
-                    color={gradeColor[n.jobGrade] ?? '#8c8c8c'}
-                    style={{ margin: 0, fontSize: 10, padding: '0 4px', lineHeight: '16px', flexShrink: 0 }}
+                    color={getGradeColor(node.jobGrade, token)}
+                    style={{ margin: 0, fontSize: token.fontSizeSM, paddingInline: token.paddingXXS, lineHeight: `${token.controlHeightSM}px`, flexShrink: 0 }}
                   >
-                    {n.jobGrade}
+                    {node.jobGrade}
                   </Tag>
-                  <Text style={{ fontSize: 12, flex: 1 }} ellipsis>
-                    {n.positionName}
+                  <Text style={{ fontSize: token.fontSizeSM, flex: 1 }} ellipsis>
+                    {node.positionName}
                   </Text>
-                  <Text type="secondary" style={{ fontSize: 11, flexShrink: 0 }}>
-                    {n.occupantName ?? 'ว่าง'}
+                  <Text type="secondary" style={{ fontSize: token.fontSizeSM, flexShrink: 0 }}>
+                    {node.occupantName ?? 'Vacant'}
                   </Text>
                 </div>
               ))}
@@ -273,8 +277,7 @@ export default function OrgChart() {
         </div>
       </Card>
 
-      {/* Breadcrumb */}
-      <Space style={{ marginBottom: 16 }}>
+      <Space style={{ marginBottom: token.marginMD }}>
         <Breadcrumb
           items={[
             {
@@ -284,38 +287,37 @@ export default function OrgChart() {
                 </Button>
               ),
             },
-            ...path.map((n, i) => ({
+            ...path.map((node, index) => ({
               title:
-                i < path.length - 1 ? (
+                index < path.length - 1 ? (
                   <Button
                     type="link"
                     size="small"
-                    onClick={() => setPath(prev => prev.slice(0, i + 1))}
-                    style={{ padding: 0, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis' }}
+                    onClick={() => setPath((current) => current.slice(0, index + 1))}
+                    style={{ padding: 0, maxWidth: token.controlHeightLG * 4.5, overflow: 'hidden', textOverflow: 'ellipsis' }}
                   >
-                    {n.positionName}
+                    {node.positionName}
                   </Button>
                 ) : (
-                  <Text strong style={{ fontSize: 13 }}>{n.positionName}</Text>
+                  <Text strong style={{ fontSize: token.fontSize }}>{node.positionName}</Text>
                 ),
             })),
           ]}
         />
       </Space>
 
-      {/* Org Chart */}
       {isLoading ? (
-        <div style={{ textAlign: 'center', padding: 80 }}>
+        <div style={{ textAlign: 'center', padding: token.paddingXL }}>
           <Spin size="large" />
         </div>
       ) : displayNodes.length === 0 ? (
-        <Empty description="ไม่มีผู้ใต้บังคับบัญชา" style={{ padding: 60 }} />
+        <Empty description="No subordinates" style={{ padding: token.paddingXL }} />
       ) : (
-        <div style={{ overflowX: 'auto', paddingBottom: 24 }}>
+        <div style={{ overflowX: 'auto', paddingBottom: token.paddingLG }}>
           <Tree
-            lineWidth="2px"
-            lineColor="#d9d9d9"
-            lineBorderRadius="6px"
+            lineWidth={`${token.lineWidthBold}px`}
+            lineColor={token.colorBorder}
+            lineBorderRadius={`${token.borderRadius}px`}
             label={
               currentNode ? (
                 <NodeBox node={currentNode} isRoot onDrillDown={drillDown} />
@@ -323,13 +325,13 @@ export default function OrgChart() {
                 <div
                   style={{
                     display: 'inline-block',
-                    background: '#001529',
-                    color: '#fff',
-                    borderRadius: 8,
-                    padding: '8px 20px',
-                    fontWeight: 700,
-                    fontSize: 14,
-                    letterSpacing: 1,
+                    background: token.colorBgSpotlight,
+                    color: token.colorTextLightSolid,
+                    borderRadius: token.borderRadiusLG,
+                    padding: `${token.paddingXS}px ${token.paddingLG}px`,
+                    fontWeight: token.fontWeightStrong,
+                    fontSize: token.fontSize,
+                    letterSpacing: 0,
                   }}
                 >
                   Organization
@@ -342,8 +344,8 @@ export default function OrgChart() {
         </div>
       )}
 
-      <Text type="secondary" style={{ fontSize: 11 }}>
-        * แสดง {DISPLAY_DEPTH} ระดับ — คลิก node เพื่อ drill-down
+      <Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+        * Showing {DISPLAY_DEPTH} levels. Click a node to drill down.
       </Text>
     </div>
   )

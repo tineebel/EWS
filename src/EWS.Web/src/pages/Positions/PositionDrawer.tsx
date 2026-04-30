@@ -1,4 +1,5 @@
-import { Drawer, Descriptions, Tag, Table, Badge, Space, Typography } from 'antd'
+import { Descriptions, Drawer, Space, Table, Tag, Typography, theme } from 'antd'
+import type { ColumnsType } from 'antd/es/table'
 import { useQuery } from '@tanstack/react-query'
 import { settingsApi } from '../../api/settings'
 import type { PositionOccupant } from '../../api/types'
@@ -9,103 +10,129 @@ interface Props {
 }
 
 export default function PositionDrawer({ positionCode, onClose }: Props) {
+  const { token } = theme.useToken()
+  const columnWidth = token.controlHeightLG
   const { data, isLoading } = useQuery({
     queryKey: ['position-detail', positionCode],
     queryFn: () => settingsApi.positions.get(positionCode!),
     enabled: !!positionCode,
   })
 
-  const pos = data?.data
+  const position = data?.data
 
-  const columns = [
+  const columns: ColumnsType<PositionOccupant> = [
     {
-      title: 'รหัสพนักงาน',
+      title: 'Employee Code',
       dataIndex: 'employeeCode',
       key: 'employeeCode',
-      width: 130,
-      render: (v: string) => <code>{v}</code>,
+      width: columnWidth * 3.2,
+      render: (value: string) => <code>{value}</code>,
     },
     {
-      title: 'ชื่อ',
+      title: 'Name',
       key: 'name',
+      width: columnWidth * 5.5,
       ellipsis: true,
-      render: (_: unknown, r: PositionOccupant) => (
-        <span>{r.employeeName}{r.employeeNameEn ? <Typography.Text type="secondary"> ({r.employeeNameEn})</Typography.Text> : ''}</span>
+      render: (_: unknown, record) => (
+        <Space direction="vertical" size={0}>
+          <Typography.Text>{record.employeeName}</Typography.Text>
+          {record.employeeNameEn && (
+            <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+              {record.employeeNameEn}
+            </Typography.Text>
+          )}
+        </Space>
       ),
     },
-    { title: 'Email', dataIndex: 'email', key: 'email', ellipsis: true, render: (v?: string) => v ?? '-' },
     {
-      title: 'เริ่มดำรง',
+      title: 'Email',
+      dataIndex: 'email',
+      key: 'email',
+      width: columnWidth * 4.75,
+      ellipsis: true,
+      render: (value?: string) => value ?? '-',
+    },
+    {
+      title: 'Start Date',
       dataIndex: 'startDate',
       key: 'startDate',
-      width: 110,
-      render: (v: string) => v.slice(0, 10),
+      width: columnWidth * 2.8,
+      render: (value: string) => value.slice(0, 10),
     },
     {
-      title: 'สิ้นสุด',
+      title: 'End Date',
       key: 'endDate',
-      width: 130,
-      render: (_: unknown, r: PositionOccupant) => {
-        if (r.isCurrent) return <Tag color="green">ปัจจุบัน</Tag>
-        return r.endDate ? r.endDate.slice(0, 10) : '-'
-      },
-    },
-    {
-      title: '',
-      dataIndex: 'isCurrent',
-      key: 'isCurrent',
-      width: 80,
-      render: (v: boolean) => v ? <Badge status="processing" text="Active" /> : null,
+      width: columnWidth * 2.75,
+      render: (_: unknown, record) => record.isCurrent
+        ? <Tag color="green">Current</Tag>
+        : record.endDate?.slice(0, 10) ?? '-',
     },
   ]
 
   return (
     <Drawer
       title={
-        pos ? (
-          <Space>
-            <code>{pos.positionCode}</code>
-            <span>{pos.positionName}</span>
-            <Tag color={pos.isActive ? 'green' : 'red'}>{pos.isActive ? 'Active' : 'Inactive'}</Tag>
+        position ? (
+          <Space wrap>
+            <code>{position.positionCode}</code>
+            <span>{position.positionName}</span>
+            <Tag color={position.isActive ? 'green' : 'red'}>
+              {position.isActive ? 'Active' : 'Inactive'}
+            </Tag>
           </Space>
-        ) : 'รายละเอียดตำแหน่ง'
+        ) : 'Position Details'
       }
       open={!!positionCode}
       onClose={onClose}
-      width={820}
+      width={columnWidth * 21.5}
       loading={isLoading}
     >
-      {pos && (
+      {position && (
         <>
-          <Descriptions bordered size="small" column={2} style={{ marginBottom: 24 }}>
-            <Descriptions.Item label="Grade">{pos.jobGrade}</Descriptions.Item>
-            <Descriptions.Item label="Scope">{pos.wfScopeType}</Descriptions.Item>
-            <Descriptions.Item label="Section" span={2}>{pos.sectionName}</Descriptions.Item>
+          <Descriptions
+            bordered
+            size="small"
+            column={2}
+            style={{ marginBottom: token.marginLG }}
+          >
+            <Descriptions.Item label="Grade">{position.jobGrade}</Descriptions.Item>
+            <Descriptions.Item label="Scope">{position.wfScopeType}</Descriptions.Item>
+            <Descriptions.Item label="Section" span={2}>{position.sectionName}</Descriptions.Item>
             <Descriptions.Item label="Parent">
-              {pos.parentPositionCode
-                ? <><code>{pos.parentPositionCode}</code> {pos.parentPositionName && `— ${pos.parentPositionName}`}</>
-                : '-'}
+              {position.parentPositionCode ? (
+                <Space size={token.marginXXS}>
+                  <code>{position.parentPositionCode}</code>
+                  {position.parentPositionName && (
+                    <Typography.Text type="secondary">
+                      {position.parentPositionName}
+                    </Typography.Text>
+                  )}
+                </Space>
+              ) : '-'}
             </Descriptions.Item>
             <Descriptions.Item label="Flags">
-              <Space size={4}>
-                {pos.isChiefLevel && <Tag color="blue">Chief</Tag>}
-                {pos.secretaryPositionCode && <Tag color="purple">Sec: <code>{pos.secretaryPositionCode}</code></Tag>}
-                {!pos.isChiefLevel && !pos.secretaryPositionCode && '-'}
+              <Space size={token.marginXXS} wrap>
+                {position.isChiefLevel && <Tag color="blue">Chief</Tag>}
+                {position.secretaryPositionCode && (
+                  <Tag color="purple">
+                    Sec: <code>{position.secretaryPositionCode}</code>
+                  </Tag>
+                )}
+                {!position.isChiefLevel && !position.secretaryPositionCode && '-'}
               </Space>
             </Descriptions.Item>
           </Descriptions>
 
-          <Typography.Title level={5} style={{ marginBottom: 12 }}>
-            ประวัติผู้ดำรงตำแหน่ง ({pos.occupants.length} คน)
+          <Typography.Title level={5} style={{ marginBottom: token.marginSM }}>
+            Occupant History ({position.occupants.length})
           </Typography.Title>
-          <Table<PositionOccupant>
+          <Table
             columns={columns}
-            dataSource={pos.occupants}
+            dataSource={position.occupants}
             rowKey="assignmentId"
             size="small"
             pagination={false}
-            scroll={{ x: 650 }}
-            rowClassName={(r) => r.isCurrent ? 'ant-table-row-selected' : ''}
+            rowClassName={(record) => record.isCurrent ? 'ant-table-row-selected' : ''}
           />
         </>
       )}

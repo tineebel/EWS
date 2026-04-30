@@ -36,12 +36,17 @@ export default function App() {
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sider theme="dark" width={220}>
-        <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-          <Typography.Text style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>
+        <div
+          style={{
+            padding: `${token.paddingMD}px ${token.paddingLG}px`,
+            borderBottom: `${token.lineWidth}px ${token.lineType} ${token.colorSplit}`,
+          }}
+        >
+          <Typography.Text style={{ color: token.colorTextLightSolid, fontWeight: token.fontWeightStrong, fontSize: token.fontSizeLG }}>
             EWS Settings
           </Typography.Text>
           <br />
-          <Typography.Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11 }}>
+          <Typography.Text style={{ color: token.colorTextQuaternary, fontSize: token.fontSizeSM }}>
             Enterprise Workflow System
           </Typography.Text>
         </div>
@@ -51,16 +56,22 @@ export default function App() {
           selectedKeys={[location.pathname]}
           items={menuItems}
           onClick={({ key }) => navigate(key)}
-          style={{ marginTop: 8 }}
+          style={{ marginTop: token.marginXS }}
         />
       </Sider>
       <Layout>
-        <Header style={{ background: token.colorBgContainer, padding: '0 24px', borderBottom: `1px solid ${token.colorBorderSecondary}` }}>
-          <Typography.Title level={4} style={{ margin: '16px 0 0' }}>
+        <Header
+          style={{
+            background: token.colorBgContainer,
+            paddingInline: token.paddingLG,
+            borderBottom: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`,
+          }}
+        >
+          <Typography.Title level={4} style={{ margin: `${token.marginMD}px 0 0` }}>
             {menuItems.find(m => m.key === location.pathname)?.label ?? 'EWS Settings'}
           </Typography.Title>
         </Header>
-        <Content style={{ margin: 24 }}>
+        <Content style={{ margin: token.marginLG }}>
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/positions" element={<PositionList />} />

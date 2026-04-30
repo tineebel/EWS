@@ -1,11 +1,14 @@
 import { useState } from 'react'
-import { Table, Input, Space, Tag, Card, Button, Tooltip, Switch, Typography } from 'antd'
-import { SearchOutlined, ReloadOutlined } from '@ant-design/icons'
+import { Button, Card, Input, Space, Switch, Table, Tag, Tooltip, Typography, theme } from 'antd'
+import type { ColumnsType } from 'antd/es/table'
+import { ReloadOutlined, SearchOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import { settingsApi } from '../../api/settings'
 import type { Delegation } from '../../api/types'
 
 export default function DelegationList() {
+  const { token } = theme.useToken()
+  const columnWidth = token.controlHeightLG
   const [positionCode, setPositionCode] = useState('')
   const [activeOnly, setActiveOnly] = useState(false)
 
@@ -14,43 +17,59 @@ export default function DelegationList() {
     queryFn: () => settingsApi.delegations.list({ positionCode: positionCode || undefined, activeOnly }),
   })
 
-  const columns = [
+  const delegations = data?.data ?? []
+
+  const columns: ColumnsType<Delegation> = [
     {
-      title: 'From Position', key: 'from',
-      render: (_: unknown, r: Delegation) => (
-        <div>
-          <code>{r.fromPositionCode}</code>
-          <br />
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>{r.fromPositionName}</Typography.Text>
-        </div>
-      )
+      title: 'From Position',
+      key: 'from',
+      width: columnWidth * 6.5,
+      render: (_: unknown, record) => (
+        <Space size={token.marginXXS}>
+          <code>{record.fromPositionCode}</code>
+          <Typography.Text type="secondary" ellipsis style={{ maxWidth: token.controlHeightLG * 4 }}>
+            {record.fromPositionName}
+          </Typography.Text>
+        </Space>
+      ),
     },
     {
-      title: 'To Position', key: 'to',
-      render: (_: unknown, r: Delegation) => (
-        <div>
-          <code>{r.toPositionCode}</code>
-          <br />
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>{r.toPositionName}</Typography.Text>
-        </div>
-      )
+      title: 'To Position',
+      key: 'to',
+      width: columnWidth * 6.5,
+      render: (_: unknown, record) => (
+        <Space size={token.marginXXS}>
+          <code>{record.toPositionCode}</code>
+          <Typography.Text type="secondary" ellipsis style={{ maxWidth: token.controlHeightLG * 4 }}>
+            {record.toPositionName}
+          </Typography.Text>
+        </Space>
+      ),
     },
-    { title: 'เริ่ม', dataIndex: 'startDate', key: 'startDate', width: 110, render: (v: string) => v.slice(0, 10) },
-    { title: 'สิ้นสุด', dataIndex: 'endDate', key: 'endDate', width: 110, render: (v: string) => v.slice(0, 10) },
-    { title: 'เหตุผล', dataIndex: 'reason', key: 'reason', ellipsis: true, render: (v?: string) => v ?? '-' },
-    { title: 'Status', dataIndex: 'isCurrentlyActive', key: 'isCurrentlyActive', width: 100, render: (v: boolean) => <Tag color={v ? 'green' : 'default'}>{v ? 'Active' : 'Expired'}</Tag> },
-    { title: 'สร้างเมื่อ', dataIndex: 'createdAt', key: 'createdAt', width: 140 },
+    { title: 'Start Date', dataIndex: 'startDate', key: 'startDate', width: columnWidth * 3, render: (value: string) => value.slice(0, 10) },
+    { title: 'End Date', dataIndex: 'endDate', key: 'endDate', width: columnWidth * 3, render: (value: string) => value.slice(0, 10) },
+    { title: 'Reason', dataIndex: 'reason', key: 'reason', width: columnWidth * 6.5, ellipsis: true, render: (value?: string) => value ?? '-' },
+    { title: 'Status', dataIndex: 'isCurrentlyActive', key: 'isCurrentlyActive', width: columnWidth * 2.75, render: (value: boolean) => <Tag color={value ? 'green' : 'default'}>{value ? 'Active' : 'Expired'}</Tag> },
+    { title: 'Created At', dataIndex: 'createdAt', key: 'createdAt', width: columnWidth * 4 },
   ]
 
   return (
-    <Card>
-      <Space style={{ marginBottom: 16 }} wrap>
+    <Card styles={{ body: { padding: token.paddingLG } }}>
+      <style>
+        {`
+          .delegations-table .ant-table-thead > tr > th,
+          .delegations-table .ant-table-tbody > tr > td {
+            padding-block: ${token.paddingXXS}px;
+          }
+        `}
+      </style>
+      <Space style={{ marginBottom: token.marginMD }} wrap>
         <Input
           placeholder="Position Code"
           prefix={<SearchOutlined />}
-          style={{ width: 200 }}
+          style={{ width: token.controlHeightLG * 6 }}
           value={positionCode}
-          onChange={e => setPositionCode(e.target.value)}
+          onChange={(event) => setPositionCode(event.target.value)}
           allowClear
         />
         <Space>
@@ -63,11 +82,13 @@ export default function DelegationList() {
       </Space>
       <Table
         columns={columns}
-        dataSource={data?.data as Delegation[] | undefined}
+        dataSource={delegations}
         rowKey="delegationId"
         loading={isLoading}
         size="small"
-        pagination={{ pageSize: 50, showTotal: (t) => `ทั้งหมด ${t} รายการ` }}
+        className="delegations-table"
+        pagination={{ pageSize: 50, showTotal: (total) => `Total ${total} delegations` }}
+        scroll={{ x: true }}
       />
     </Card>
   )

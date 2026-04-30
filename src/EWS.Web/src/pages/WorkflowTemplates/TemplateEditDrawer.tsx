@@ -1,13 +1,27 @@
 import { useEffect, useState } from 'react'
 import {
-  Drawer, Tabs, Form, Input, Select, Switch, Checkbox, Button,
-  Space, Table, InputNumber, Tag, message, Typography, Timeline,
-  Collapse
+  Button,
+  Checkbox,
+  Collapse,
+  Drawer,
+  Form,
+  Input,
+  InputNumber,
+  Select,
+  Space,
+  Switch,
+  Table,
+  Tabs,
+  Tag,
+  Timeline,
+  Typography,
+  message,
+  theme,
 } from 'antd'
-import { PlusOutlined, DeleteOutlined } from '@ant-design/icons'
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { settingsApi } from '../../api/settings'
-import type { WorkflowTemplate, UpdateStepRequest } from '../../api/types'
+import type { UpdateStepRequest, WorkflowTemplate } from '../../api/types'
 
 const { TextArea } = Input
 
@@ -45,13 +59,14 @@ interface StepRow extends UpdateStepRequest {
 }
 
 export default function TemplateEditDrawer({ template, onClose, onSaved }: Props) {
+  const { token } = theme.useToken()
+  const drawerWidth = token.controlHeightLG * 22.5
   const [form] = Form.useForm()
   const [steps, setSteps] = useState<StepRow[]>([])
   const [activeTab, setActiveTab] = useState('edit')
 
   const open = template !== null
 
-  // Load history when tab changes to history
   const { data: historyData, isLoading: historyLoading } = useQuery({
     queryKey: ['template-history', template?.templateId],
     queryFn: () => settingsApi.workflowTemplates.history(template!.templateId),
@@ -62,16 +77,15 @@ export default function TemplateEditDrawer({ template, onClose, onSaved }: Props
     mutationFn: (body: Parameters<typeof settingsApi.workflowTemplates.update>[1]) =>
       settingsApi.workflowTemplates.update(template!.templateId, body),
     onSuccess: () => {
-      message.success('บันทึก Template เรียบร้อยแล้ว')
+      message.success('Template saved')
       onSaved()
       onClose()
     },
     onError: () => {
-      message.error('เกิดข้อผิดพลาดในการบันทึก')
+      message.error('Unable to save template')
     },
   })
 
-  // Populate form when template changes
   useEffect(() => {
     if (!template) return
     form.setFieldsValue({
@@ -84,44 +98,47 @@ export default function TemplateEditDrawer({ template, onClose, onSaved }: Props
       condition2: template.condition2 ?? '',
       changeNote: '',
     })
-    const initialSteps: StepRow[] = template.steps.map((s, i) => ({
-      key: `existing-${s.stepId}-${i}`,
-      stepId: s.stepId,
-      stepOrder: s.stepOrder,
-      stepName: s.stepName,
-      approverType: s.approverType,
-      specificPositionCode: s.specificPositionCode,
+    const initialSteps: StepRow[] = template.steps.map((step, index) => ({
+      key: `existing-${step.stepId}-${index}`,
+      stepId: step.stepId,
+      stepOrder: step.stepOrder,
+      stepName: step.stepName,
+      approverType: step.approverType,
+      specificPositionCode: step.specificPositionCode,
       escalationDays: 0,
-      isRequired: s.isRequired,
+      isRequired: step.isRequired,
     }))
     setSteps(initialSteps)
     setActiveTab('edit')
   }, [template, form])
 
   const addStep = () => {
-    const nextOrder = steps.length > 0 ? Math.max(...steps.map(s => s.stepOrder)) + 1 : 1
-    setSteps(prev => [...prev, {
-      key: `new-${Date.now()}`,
-      stepId: undefined,
-      stepOrder: nextOrder,
-      stepName: '',
-      approverType: 'DirectSupervisor',
-      specificPositionCode: undefined,
-      escalationDays: 0,
-      isRequired: true,
-    }])
+    const nextOrder = steps.length > 0 ? Math.max(...steps.map((step) => step.stepOrder)) + 1 : 1
+    setSteps((current) => [
+      ...current,
+      {
+        key: `new-${Date.now()}`,
+        stepId: undefined,
+        stepOrder: nextOrder,
+        stepName: '',
+        approverType: 'DirectSupervisor',
+        specificPositionCode: undefined,
+        escalationDays: 0,
+        isRequired: true,
+      },
+    ])
   }
 
   const removeStep = (key: string) => {
-    setSteps(prev => prev.filter(s => s.key !== key))
+    setSteps((current) => current.filter((step) => step.key !== key))
   }
 
   const updateStep = (key: string, field: keyof StepRow, value: unknown) => {
-    setSteps(prev => prev.map(s => s.key === key ? { ...s, [field]: value } : s))
+    setSteps((current) => current.map((step) => step.key === key ? { ...step, [field]: value } : step))
   }
 
   const handleSave = () => {
-    form.validateFields().then(values => {
+    form.validateFields().then((values) => {
       saveMutation.mutate({
         flowDesc: values.flowDesc,
         wfScopeType: values.wfScopeType,
@@ -133,14 +150,14 @@ export default function TemplateEditDrawer({ template, onClose, onSaved }: Props
         condition4: undefined,
         condition5: undefined,
         isActive: values.isActive ?? true,
-        steps: steps.map((s, idx) => ({
-          stepId: s.stepId,
-          stepOrder: idx + 1,
-          stepName: s.stepName,
-          approverType: s.approverType,
-          specificPositionCode: s.specificPositionCode || undefined,
-          escalationDays: s.escalationDays ?? 0,
-          isRequired: s.isRequired ?? true,
+        steps: steps.map((step, index) => ({
+          stepId: step.stepId,
+          stepOrder: index + 1,
+          stepName: step.stepName,
+          approverType: step.approverType,
+          specificPositionCode: step.specificPositionCode || undefined,
+          escalationDays: step.escalationDays ?? 0,
+          isRequired: step.isRequired ?? true,
         })),
         changeNote: values.changeNote || undefined,
       })
@@ -151,7 +168,7 @@ export default function TemplateEditDrawer({ template, onClose, onSaved }: Props
     {
       title: '#',
       key: 'order',
-      width: 40,
+      width: token.controlHeightLG,
       render: (_: unknown, __: StepRow, index: number) => index + 1,
     },
     {
@@ -160,22 +177,22 @@ export default function TemplateEditDrawer({ template, onClose, onSaved }: Props
       render: (_: unknown, record: StepRow) => (
         <Input
           value={record.stepName}
-          onChange={e => updateStep(record.key, 'stepName', e.target.value)}
+          onChange={(event) => updateStep(record.key, 'stepName', event.target.value)}
           size="small"
           placeholder="Step Name"
-          style={{ minWidth: 140 }}
+          style={{ minWidth: token.controlHeightLG * 4 }}
         />
       ),
     },
     {
       title: 'Approver Type',
       key: 'approverType',
-      width: 180,
+      width: token.controlHeightLG * 5,
       render: (_: unknown, record: StepRow) => (
         <Select
           value={record.approverType}
           options={APPROVER_TYPE_OPTIONS}
-          onChange={v => updateStep(record.key, 'approverType', v)}
+          onChange={(value) => updateStep(record.key, 'approverType', value)}
           size="small"
           style={{ width: '100%' }}
         />
@@ -184,41 +201,41 @@ export default function TemplateEditDrawer({ template, onClose, onSaved }: Props
     {
       title: 'Position Code',
       key: 'specificPositionCode',
-      width: 130,
+      width: token.controlHeightLG * 4,
       render: (_: unknown, record: StepRow) =>
         record.approverType === 'SpecificPosition' ? (
           <Input
             value={record.specificPositionCode ?? ''}
-            onChange={e => updateStep(record.key, 'specificPositionCode', e.target.value)}
+            onChange={(event) => updateStep(record.key, 'specificPositionCode', event.target.value)}
             size="small"
             placeholder="e.g. HOFIN01"
           />
         ) : (
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>-</Typography.Text>
+          <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>-</Typography.Text>
         ),
     },
     {
       title: 'Esc. Days',
       key: 'escalationDays',
-      width: 90,
+      width: token.controlHeightLG * 3,
       render: (_: unknown, record: StepRow) => (
         <InputNumber
           value={record.escalationDays}
           min={0}
-          onChange={v => updateStep(record.key, 'escalationDays', v ?? 0)}
+          onChange={(value) => updateStep(record.key, 'escalationDays', value ?? 0)}
           size="small"
-          style={{ width: 80 }}
+          style={{ width: token.controlHeightLG * 2 }}
         />
       ),
     },
     {
       title: 'Required',
       key: 'isRequired',
-      width: 80,
+      width: token.controlHeightLG * 2,
       render: (_: unknown, record: StepRow) => (
         <Switch
           checked={record.isRequired}
-          onChange={v => updateStep(record.key, 'isRequired', v)}
+          onChange={(value) => updateStep(record.key, 'isRequired', value)}
           size="small"
         />
       ),
@@ -226,7 +243,7 @@ export default function TemplateEditDrawer({ template, onClose, onSaved }: Props
     {
       title: '',
       key: 'action',
-      width: 40,
+      width: token.controlHeightLG,
       render: (_: unknown, record: StepRow) => (
         <Button
           type="text"
@@ -245,8 +262,8 @@ export default function TemplateEditDrawer({ template, onClose, onSaved }: Props
     <Drawer
       open={open}
       onClose={onClose}
-      width={900}
-      title={template ? `Edit: ${template.docName} — Flow ${template.flowCode}` : 'Edit Template'}
+      width={drawerWidth}
+      title={template ? `Edit: ${template.docName} - Flow ${template.flowCode}` : 'Edit Template'}
       footer={
         activeTab === 'edit' ? (
           <Space style={{ justifyContent: 'flex-end', width: '100%' }}>
@@ -265,15 +282,14 @@ export default function TemplateEditDrawer({ template, onClose, onSaved }: Props
         items={[
           {
             key: 'edit',
-            label: 'แก้ไข Template',
+            label: 'Edit Template',
             children: (
               <Form form={form} layout="vertical">
-                {/* Header fields */}
-                <Space wrap style={{ width: '100%', marginBottom: 8 }}>
-                  <Form.Item name="flowDesc" label="Flow Description" rules={[{ required: true, max: 200 }]} style={{ marginBottom: 0, minWidth: 280 }}>
+                <Space wrap style={{ width: '100%', marginBottom: token.marginXS }}>
+                  <Form.Item name="flowDesc" label="Flow Description" rules={[{ required: true, max: 200 }]} style={{ marginBottom: 0, minWidth: token.controlHeightLG * 8 }}>
                     <Input placeholder="e.g. PCV-BR > 1,000" />
                   </Form.Item>
-                  <Form.Item name="wfScopeType" label="Scope" rules={[{ required: true }]} style={{ marginBottom: 0, width: 120 }}>
+                  <Form.Item name="wfScopeType" label="Scope" rules={[{ required: true }]} style={{ marginBottom: 0, width: token.controlHeightLG * 3 }}>
                     <Select options={SCOPE_OPTIONS} />
                   </Form.Item>
                   <Form.Item name="isActive" label="Active" valuePropName="checked" style={{ marginBottom: 0 }}>
@@ -287,19 +303,17 @@ export default function TemplateEditDrawer({ template, onClose, onSaved }: Props
                   </Form.Item>
                 </Space>
 
-                {/* Conditions */}
-                <Space wrap style={{ marginBottom: 16 }}>
-                  <Form.Item name="condition1" label="Condition 1" style={{ marginBottom: 0, width: 160 }}>
+                <Space wrap style={{ marginBottom: token.marginMD }}>
+                  <Form.Item name="condition1" label="Condition 1" style={{ marginBottom: 0, width: token.controlHeightLG * 4 }}>
                     <Input placeholder="e.g. <= 1,000" size="small" />
                   </Form.Item>
-                  <Form.Item name="condition2" label="Condition 2" style={{ marginBottom: 0, width: 160 }}>
+                  <Form.Item name="condition2" label="Condition 2" style={{ marginBottom: 0, width: token.controlHeightLG * 4 }}>
                     <Input placeholder="e.g. > 1,000" size="small" />
                   </Form.Item>
                 </Space>
 
-                {/* Steps */}
-                <div style={{ marginBottom: 16 }}>
-                  <Space style={{ marginBottom: 8 }}>
+                <div style={{ marginBottom: token.marginMD }}>
+                  <Space style={{ marginBottom: token.marginXS }}>
                     <Typography.Text strong>Approval Steps</Typography.Text>
                     <Button size="small" icon={<PlusOutlined />} onClick={addStep}>
                       Add Step
@@ -315,38 +329,37 @@ export default function TemplateEditDrawer({ template, onClose, onSaved }: Props
                   />
                 </div>
 
-                {/* Change note */}
                 <Form.Item name="changeNote" label="Change Note (optional)">
-                  <TextArea rows={2} maxLength={500} showCount placeholder="บันทึกเหตุผลการแก้ไข..." />
+                  <TextArea rows={2} maxLength={500} showCount placeholder="Reason for this change..." />
                 </Form.Item>
               </Form>
             ),
           },
           {
             key: 'history',
-            label: 'ประวัติการเปลี่ยนแปลง',
+            label: 'Change History',
             children: historyLoading ? (
               <Typography.Text>Loading...</Typography.Text>
             ) : historyItems.length === 0 ? (
-              <Typography.Text type="secondary">ยังไม่มีประวัติการเปลี่ยนแปลง</Typography.Text>
+              <Typography.Text type="secondary">No change history</Typography.Text>
             ) : (
               <Timeline
-                items={historyItems.map(log => ({
+                items={historyItems.map((log) => ({
                   key: log.auditId,
                   color: changeTypeColor[log.changeType] ?? 'blue',
                   children: (
-                    <div style={{ marginBottom: 8 }}>
+                    <div style={{ marginBottom: token.marginXS }}>
                       <Space wrap>
                         <Tag color={changeTypeColor[log.changeType] ?? 'blue'}>
                           v{log.version} {log.changeType}
                         </Tag>
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                          by {log.changedBy} · {new Date(log.changedAt).toLocaleString('th-TH')}
+                        <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+                          by {log.changedBy} - {new Date(log.changedAt).toLocaleString('th-TH')}
                         </Typography.Text>
                       </Space>
                       {log.changeNote && (
                         <div>
-                          <Typography.Text italic style={{ fontSize: 12 }}>
+                          <Typography.Text italic style={{ fontSize: token.fontSizeSM }}>
                             "{log.changeNote}"
                           </Typography.Text>
                         </div>
@@ -355,10 +368,19 @@ export default function TemplateEditDrawer({ template, onClose, onSaved }: Props
                         ghost
                         size="small"
                         items={[{
-                          key: 'snap',
-                          label: <Typography.Text type="secondary" style={{ fontSize: 11 }}>ดู Snapshot</Typography.Text>,
+                          key: 'snapshot',
+                          label: <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>View Snapshot</Typography.Text>,
                           children: (
-                            <pre style={{ fontSize: 11, background: '#f5f5f5', padding: 8, borderRadius: 4, maxHeight: 200, overflow: 'auto' }}>
+                            <pre
+                              style={{
+                                fontSize: token.fontSizeSM,
+                                background: token.colorFillQuaternary,
+                                padding: token.paddingXS,
+                                borderRadius: token.borderRadiusSM,
+                                maxHeight: token.controlHeightLG * 5,
+                                overflow: 'auto',
+                              }}
+                            >
                               {JSON.stringify(JSON.parse(log.snapshotJson), null, 2)}
                             </pre>
                           ),

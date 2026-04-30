@@ -1,15 +1,22 @@
 import { useState } from 'react'
-import { Table, Input, Select, Space, Tag, Card, Button, Tooltip, Badge } from 'antd'
-import { SearchOutlined, ReloadOutlined } from '@ant-design/icons'
+import { Badge, Button, Card, Input, Select, Space, Table, Tag, Tooltip, theme } from 'antd'
+import type { ColumnsType } from 'antd/es/table'
+import { ReloadOutlined, SearchOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import { settingsApi } from '../../api/settings'
 import type { DocumentType } from '../../api/types'
 
 const categoryColors: Record<string, string> = {
-  Memo: 'blue', Finance: 'green', IT: 'purple', SIS: 'orange', Contract: 'red',
+  Memo: 'blue',
+  Finance: 'green',
+  IT: 'purple',
+  SIS: 'orange',
+  Contract: 'red',
 }
 
 export default function DocumentTypeList() {
+  const { token } = theme.useToken()
+  const columnWidth = token.controlHeightLG
   const [search, setSearch] = useState('')
   const [isActive, setIsActive] = useState<boolean | undefined>(true)
 
@@ -18,33 +25,49 @@ export default function DocumentTypeList() {
     queryFn: () => settingsApi.documentTypes.list({ search: search || undefined, isActive }),
   })
 
-  const columns = [
-    { title: 'DocCode', dataIndex: 'docCode', key: 'docCode', width: 100 },
-    { title: 'ชื่อเอกสาร', dataIndex: 'docName', key: 'docName', ellipsis: true },
-    { title: 'ชื่อ (EN)', dataIndex: 'docNameEn', key: 'docNameEn', ellipsis: true, render: (v?: string) => v ?? '-' },
-    { title: 'Category', dataIndex: 'category', key: 'category', width: 110, render: (v: string) => <Tag color={categoryColors[v] ?? 'default'}>{v}</Tag> },
-    { title: 'Templates', dataIndex: 'templateCount', key: 'templateCount', width: 100, render: (v: number) => <Badge count={v} showZero style={{ backgroundColor: v > 0 ? '#52c41a' : '#d9d9d9' }} /> },
-    { title: 'คำอธิบาย', dataIndex: 'description', key: 'description', ellipsis: true, render: (v?: string) => v ?? '-' },
-    { title: 'Status', dataIndex: 'isActive', key: 'isActive', width: 90, render: (v: boolean) => <Tag color={v ? 'green' : 'red'}>{v ? 'Active' : 'Inactive'}</Tag> },
+  const documentTypes = data?.data ?? []
+
+  const columns: ColumnsType<DocumentType> = [
+    { title: 'DocCode', dataIndex: 'docCode', key: 'docCode', width: columnWidth * 2.5 },
+    { title: 'Document Name', dataIndex: 'docName', key: 'docName', width: columnWidth * 6.5, ellipsis: true },
+    { title: 'Name (EN)', dataIndex: 'docNameEn', key: 'docNameEn', width: columnWidth * 5.5, ellipsis: true, render: (value?: string) => value ?? '-' },
+    { title: 'Category', dataIndex: 'category', key: 'category', width: columnWidth * 3, render: (value: string) => <Tag color={categoryColors[value] ?? 'default'}>{value}</Tag> },
+    {
+      title: 'Templates',
+      dataIndex: 'templateCount',
+      key: 'templateCount',
+      width: columnWidth * 2.75,
+      render: (value: number) => <Badge count={value} showZero color={value > 0 ? token.colorSuccess : token.colorTextDisabled} />,
+    },
+    { title: 'Description', dataIndex: 'description', key: 'description', width: columnWidth * 7, ellipsis: true, render: (value?: string) => value ?? '-' },
+    { title: 'Status', dataIndex: 'isActive', key: 'isActive', width: columnWidth * 2.5, render: (value: boolean) => <Tag color={value ? 'green' : 'red'}>{value ? 'Active' : 'Inactive'}</Tag> },
   ]
 
   return (
-    <Card>
-      <Space style={{ marginBottom: 16 }} wrap>
+    <Card styles={{ body: { padding: token.paddingLG } }}>
+      <style>
+        {`
+          .document-types-table .ant-table-thead > tr > th,
+          .document-types-table .ant-table-tbody > tr > td {
+            padding-block: ${token.paddingXXS}px;
+          }
+        `}
+      </style>
+      <Space style={{ marginBottom: token.marginMD }} wrap>
         <Input
-          placeholder="ค้นหา DocCode / ชื่อเอกสาร"
+          placeholder="Search DocCode or document name"
           prefix={<SearchOutlined />}
-          style={{ width: 280 }}
+          style={{ width: token.controlHeightLG * 8 }}
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onChange={(event) => setSearch(event.target.value)}
           allowClear
         />
         <Select
-          style={{ width: 140 }}
+          style={{ width: token.controlHeightLG * 4 }}
           value={isActive === undefined ? 'all' : isActive ? 'active' : 'inactive'}
-          onChange={v => setIsActive(v === 'all' ? undefined : v === 'active')}
+          onChange={(value) => setIsActive(value === 'all' ? undefined : value === 'active')}
           options={[
-            { value: 'all', label: 'ทั้งหมด' },
+            { value: 'all', label: 'All' },
             { value: 'active', label: 'Active' },
             { value: 'inactive', label: 'Inactive' },
           ]}
@@ -55,11 +78,13 @@ export default function DocumentTypeList() {
       </Space>
       <Table
         columns={columns}
-        dataSource={data?.data as DocumentType[] | undefined}
+        dataSource={documentTypes}
         rowKey="documentTypeId"
         loading={isLoading}
         size="small"
-        pagination={{ pageSize: 50, showTotal: (t) => `ทั้งหมด ${t} รายการ` }}
+        className="document-types-table"
+        pagination={{ pageSize: 50, showTotal: (total) => `Total ${total} document types` }}
+        scroll={{ x: true }}
       />
     </Card>
   )

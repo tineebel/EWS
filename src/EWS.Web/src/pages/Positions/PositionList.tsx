@@ -1,13 +1,29 @@
 import { useState } from 'react'
-import { Table, Input, Select, Space, Tag, Card, Button, Tooltip } from 'antd'
-import { SearchOutlined, ReloadOutlined } from '@ant-design/icons'
+import {
+  Button,
+  Card,
+  Input,
+  Select,
+  Space,
+  Table,
+  Tag,
+  Tooltip,
+  Typography,
+  theme,
+} from 'antd'
+import type { TablePaginationConfig } from 'antd'
+import type { ColumnsType } from 'antd/es/table'
+import { EyeOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import { settingsApi } from '../../api/settings'
 import type { Position } from '../../api/types'
-import type { TablePaginationConfig } from 'antd'
 import PositionDrawer from './PositionDrawer'
 
+const scopeColors: Record<string, string> = { Branch: 'blue', Ho: 'orange', All: 'green' }
+
 export default function PositionList() {
+  const { token } = theme.useToken()
+  const columnWidth = token.controlHeightLG
   const [search, setSearch] = useState('')
   const [isActive, setIsActive] = useState<boolean | undefined>(true)
   const [pagination, setPagination] = useState({ page: 1, pageSize: 20 })
@@ -18,78 +34,170 @@ export default function PositionList() {
     queryFn: () => settingsApi.positions.list({ search: search || undefined, isActive, ...pagination }),
   })
 
-  const columns = [
-    { title: 'Code', dataIndex: 'positionCode', key: 'positionCode', width: 130, render: (v: string) => <code>{v}</code> },
-    { title: 'ชื่อตำแหน่ง', dataIndex: 'positionName', key: 'positionName', ellipsis: true },
-    { title: 'Grade', dataIndex: 'jobGrade', key: 'jobGrade', width: 80 },
-    { title: 'Scope', dataIndex: 'wfScopeType', key: 'wfScopeType', width: 80 },
-    { title: 'Section', dataIndex: 'sectionName', key: 'sectionName', ellipsis: true },
-    { title: 'Parent', dataIndex: 'parentPositionCode', key: 'parentPositionCode', width: 130, render: (v?: string) => v ? <code>{v}</code> : '-' },
+  const positions = data?.data.items ?? []
+
+  const columns: ColumnsType<Position> = [
     {
-      title: 'Flags', key: 'flags', width: 120,
-      render: (_: unknown, r: Position) => (
-        <Space size={4}>
-          {r.isChiefLevel && <Tag color="blue">Chief</Tag>}
-          {r.secretaryPositionCode && <Tag color="purple">Sec</Tag>}
-        </Space>
-      )
+      title: 'Code',
+      dataIndex: 'positionCode',
+      key: 'positionCode',
+      width: columnWidth * 3.5,
+      fixed: 'left',
+      render: (value: string) => <code>{value}</code>,
     },
     {
-      title: 'Status', dataIndex: 'isActive', key: 'isActive', width: 90,
-      render: (v: boolean) => <Tag color={v ? 'green' : 'red'}>{v ? 'Active' : 'Inactive'}</Tag>
+      title: 'Short Code',
+      dataIndex: 'positionShortName',
+      key: 'positionShortName',
+      width: columnWidth * 3.5,
+      render: (value?: string) => value ? <Typography.Text type="secondary">{value}</Typography.Text> : '-',
+    },
+    {
+      title: 'Position Name',
+      dataIndex: 'positionName',
+      key: 'positionName',
+      width: columnWidth * 6.5,
+      ellipsis: true,
+      render: (value: string) => <Typography.Text ellipsis>{value}</Typography.Text>,
+    },
+    { title: 'Grade', dataIndex: 'jobGrade', key: 'jobGrade', width: columnWidth * 2.25 },
+    {
+      title: 'Scope',
+      dataIndex: 'wfScopeType',
+      key: 'wfScopeType',
+      width: columnWidth * 2.5,
+      render: (value: string) => <Tag color={scopeColors[value] ?? 'default'}>{value}</Tag>,
+    },
+    { title: 'Section', dataIndex: 'sectionName', key: 'sectionName', width: columnWidth * 6.5, ellipsis: true },
+    {
+      title: 'Parent',
+      dataIndex: 'parentPositionCode',
+      key: 'parentPositionCode',
+      width: columnWidth * 3.75,
+      render: (value?: string) => value ? <code>{value}</code> : '-',
+    },
+    {
+      title: 'Flags',
+      key: 'flags',
+      width: columnWidth * 3.5,
+      render: (_: unknown, record) => (
+        <Space size={token.marginXXS}>
+          {record.isChiefLevel && <Tag color="blue">Chief</Tag>}
+          {record.secretaryPositionCode && <Tag color="purple">Sec</Tag>}
+          {!record.isChiefLevel && !record.secretaryPositionCode && (
+            <Typography.Text type="secondary">-</Typography.Text>
+          )}
+        </Space>
+      ),
+    },
+    {
+      title: 'Status',
+      dataIndex: 'isActive',
+      key: 'isActive',
+      width: columnWidth * 2.5,
+      render: (value: boolean) => <Tag color={value ? 'green' : 'red'}>{value ? 'Active' : 'Inactive'}</Tag>,
+    },
+    {
+      title: 'Action',
+      key: 'action',
+      width: columnWidth * 2.25,
+      fixed: 'right',
+      render: (_: unknown, record) => (
+        <Tooltip title="View details">
+          <Button
+            icon={<EyeOutlined />}
+            size="small"
+            type="text"
+            onClick={(event) => {
+              event.stopPropagation()
+              setSelectedCode(record.positionCode)
+            }}
+          />
+        </Tooltip>
+      ),
     },
   ]
 
-  const handleTableChange = (p: TablePaginationConfig) => {
-    setPagination({ page: p.current ?? 1, pageSize: p.pageSize ?? 20 })
+  const handleTableChange = (nextPagination: TablePaginationConfig) => {
+    setPagination({
+      page: nextPagination.current ?? 1,
+      pageSize: nextPagination.pageSize ?? 20,
+    })
   }
 
   return (
     <>
-    <Card>
-      <Space style={{ marginBottom: 16 }} wrap>
-        <Input
-          placeholder="ค้นหา Position Code / ชื่อตำแหน่ง"
-          prefix={<SearchOutlined />}
-          style={{ width: 280 }}
-          value={search}
-          onChange={e => { setSearch(e.target.value); setPagination(p => ({ ...p, page: 1 })) }}
-          allowClear
+      <Card styles={{ body: { padding: token.paddingLG } }}>
+        <style>
+          {`
+            .positions-table .ant-table-thead > tr > th {
+              padding-block: ${token.paddingXXS}px;
+            }
+
+            .positions-table .ant-table-tbody > tr > td {
+              padding-block: ${token.paddingXXS}px;
+            }
+
+            .positions-table .ant-space-vertical {
+              gap: 0 !important;
+            }
+          `}
+        </style>
+        <Space style={{ marginBottom: token.marginMD }} wrap>
+          <Input
+            placeholder="Search position code or name"
+            prefix={<SearchOutlined />}
+            style={{ width: token.controlHeightLG * 8 }}
+            value={search}
+            onChange={(event) => {
+              setSearch(event.target.value)
+              setPagination((current) => ({ ...current, page: 1 }))
+            }}
+            allowClear
+          />
+          <Select
+            style={{ width: token.controlHeightLG * 4 }}
+            value={isActive === undefined ? 'all' : isActive ? 'active' : 'inactive'}
+            onChange={(value) => {
+              setIsActive(value === 'all' ? undefined : value === 'active')
+              setPagination((current) => ({ ...current, page: 1 }))
+            }}
+            options={[
+              { value: 'all', label: 'All' },
+              { value: 'active', label: 'Active' },
+              { value: 'inactive', label: 'Inactive' },
+            ]}
+          />
+          <Tooltip title="Refresh">
+            <Button icon={<ReloadOutlined />} onClick={() => refetch()} />
+          </Tooltip>
+        </Space>
+
+        <Table
+          columns={columns}
+          dataSource={positions}
+          rowKey="positionId"
+          loading={isLoading}
+          size="small"
+          pagination={{
+            current: pagination.page,
+            pageSize: pagination.pageSize,
+            total: data?.data.totalRows,
+            showSizeChanger: true,
+            showTotal: (total) => `Total ${total} positions`,
+            pageSizeOptions: ['20', '50', '100'],
+          }}
+          onChange={handleTableChange}
+          className="positions-table"
+          scroll={{ x: columnWidth * 36 }}
+          onRow={(record) => ({
+            onClick: () => setSelectedCode(record.positionCode),
+            style: { cursor: 'pointer' },
+          })}
         />
-        <Select
-          style={{ width: 140 }}
-          value={isActive === undefined ? 'all' : isActive ? 'active' : 'inactive'}
-          onChange={v => setIsActive(v === 'all' ? undefined : v === 'active')}
-          options={[
-            { value: 'all', label: 'ทั้งหมด' },
-            { value: 'active', label: 'Active' },
-            { value: 'inactive', label: 'Inactive' },
-          ]}
-        />
-        <Tooltip title="Refresh">
-          <Button icon={<ReloadOutlined />} onClick={() => refetch()} />
-        </Tooltip>
-      </Space>
-      <Table
-        columns={columns}
-        dataSource={data?.data.items}
-        rowKey="positionId"
-        loading={isLoading}
-        size="small"
-        pagination={{
-          current: pagination.page,
-          pageSize: pagination.pageSize,
-          total: data?.data.totalRows,
-          showSizeChanger: true,
-          showTotal: (t) => `ทั้งหมด ${t} รายการ`,
-          pageSizeOptions: ['20', '50', '100'],
-        }}
-        onChange={handleTableChange}
-        scroll={{ x: 900 }}
-        onRow={(r) => ({ onClick: () => setSelectedCode(r.positionCode), style: { cursor: 'pointer' } })}
-      />
-    </Card>
-    <PositionDrawer positionCode={selectedCode} onClose={() => setSelectedCode(null)} />
+      </Card>
+
+      <PositionDrawer positionCode={selectedCode} onClose={() => setSelectedCode(null)} />
     </>
   )
 }

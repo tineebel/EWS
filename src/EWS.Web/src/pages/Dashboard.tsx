@@ -1,9 +1,10 @@
-import { Card, Col, Row, Statistic, Typography } from 'antd'
-import { ApartmentOutlined, TeamOutlined, FileTextOutlined, BranchesOutlined } from '@ant-design/icons'
+import { ApartmentOutlined, BranchesOutlined, FileTextOutlined, TeamOutlined } from '@ant-design/icons'
+import { Card, Col, Row, Statistic, Typography, theme } from 'antd'
 import { useQuery } from '@tanstack/react-query'
 import { settingsApi } from '../api/settings'
 
 export default function Dashboard() {
+  const { token } = theme.useToken()
   const positions = useQuery({ queryKey: ['positions-count'], queryFn: () => settingsApi.positions.list({ isActive: true, pageSize: 1 }) })
   const employees = useQuery({ queryKey: ['employees-count'], queryFn: () => settingsApi.employees.list({ status: 'Active', pageSize: 1 }) })
   const docTypes = useQuery({ queryKey: ['doctypes-count'], queryFn: () => settingsApi.documentTypes.list({ isActive: true }) })
@@ -11,12 +12,14 @@ export default function Dashboard() {
 
   return (
     <div>
-      <Typography.Title level={4} style={{ marginBottom: 24 }}>ภาพรวมระบบ</Typography.Title>
-      <Row gutter={[16, 16]}>
+      <Typography.Title level={4} style={{ marginBottom: token.marginLG }}>
+        System Overview
+      </Typography.Title>
+      <Row gutter={[token.marginMD, token.marginMD]}>
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="ตำแหน่งที่ใช้งาน"
+              title="Active Positions"
               value={positions.data?.data.totalRows ?? '-'}
               prefix={<ApartmentOutlined />}
               loading={positions.isLoading}
@@ -26,7 +29,7 @@ export default function Dashboard() {
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="พนักงาน Active"
+              title="Active Employees"
               value={employees.data?.data.totalRows ?? '-'}
               prefix={<TeamOutlined />}
               loading={employees.isLoading}
@@ -36,7 +39,7 @@ export default function Dashboard() {
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="ประเภทเอกสาร"
+              title="Document Types"
               value={docTypes.data?.data.length ?? '-'}
               prefix={<FileTextOutlined />}
               loading={docTypes.isLoading}
